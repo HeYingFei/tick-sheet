@@ -1,0 +1,28 @@
+# =============================================================================
+# 行尾统一策略
+# -----------------------------------------------------------------------------
+# 仓库内统一存 LF，检出时也不做转换，保证各平台拿到完全一致的文件。
+#
+# 关键在 mvnw 这类 shell 脚本：若被转成 CRLF，在 Linux / macOS 上会因
+# shebang 行末尾混入 \r 而无法执行，表现为「$'\r': command not found」。
+# =============================================================================
+
+* text=auto eol=lf
+
+# Windows 批处理必须保留 CRLF，否则部分命令的解析会出问题
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# 显式声明两个 wrapper 脚本的行尾，避免受全局规则影响
+mvnw text eol=lf
+mvnw.cmd text eol=crlf
+
+# 二进制文件不做行尾转换与文本合并
+*.jar binary
+*.zip binary
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary

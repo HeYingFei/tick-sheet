@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="任务管理系统">
+  <!--
+    标签页图标。设计说明：
+    - 底色取项目主色「普鲁士蓝」#17456B，与界面同源；
+    - 符号只保留一个对勾，不叠加任何装饰——标签页实际渲染尺寸常为 16px，
+      多一个元素就会糊成一团；
+    - 线条 60/512（约 11.7%），换算到 16px 约 1.9px，缩到最小仍是可辨的实线；
+    - 圆头圆角让折角不产生尖锐的像素锯齿。
+    - 蓝底在浅色标签栏上醒目，白勾在深色标签栏上醒目，两种主题下各有一个锚点。
+  -->
+  <rect width="512" height="512" rx="100" fill="#17456B"/>
+  <path d="M144 262 L213 331 L368 176"
+        fill="none"
+        stroke="#FFFFFF"
+        stroke-width="60"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+</svg>

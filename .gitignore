@@ -1,0 +1,30 @@
+# ---- 后端 ----
+backend/target/
+backend/data/
+backend/src/main/resources/application-dev.yml
+*.log
+
+# ---- 前端 ----
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/npm-debug.log*
+
+# ---- 编辑器 / IDE ----
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+
+# ---- 智能体工具 ----
+.ohmyagent/
+.monkeycode/
+
+# ---- 操作系统 ----
+Thumbs.db
+Desktop.ini
+.DS_Store

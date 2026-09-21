@@ -1,0 +1,365 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   设计令牌
+   --------------------------------------------------------------------------
+   语义色集中在此，深色模式只覆盖变量值。
+   页面代码用 bg-surface / text-ink / border-rule 这类语义类表达意图，
+   不再散落 dark:bg-gray-800 之类的条件类名。
+   ========================================================================== */
+:root {
+  /* 基底：冷调纸灰。刻意避开纯白，也避开常见的暖奶油底色 */
+  --c-paper: 244 245 243;
+  --c-surface: 252 252 251;
+  --c-raised: 255 255 255;
+  --c-ink: 26 29 31;
+  --c-graphite: 107 113 119;
+  --c-faint: 152 158 156;
+  --c-rule: 217 219 215;
+  --c-rule-strong: 192 196 190;
+  --c-shadow: 26 29 31;
+
+  /* 主色：普鲁士蓝，比通用 UI 蓝更沉，用于进行中与聚焦 */
+  --c-primary: 23 69 107;
+  --c-primary-light: 44 103 150;
+  --c-primary-dark: 15 48 73;
+
+  /* 四象限：印刷颜料色系 */
+  --c-q1: 166 58 46;
+  --c-q2: 23 69 107;
+  --c-q3: 165 118 42;
+  --c-q4: 124 138 123;
+
+  /* 任务状态 */
+  --c-status-todo: 107 113 119;
+  --c-status-doing: 23 69 107;
+  --c-status-done: 63 107 79;
+  --c-status-canceled: 168 173 168;
+  --c-status-overdue: 166 58 46;
+
+  /* 操作类型补充色，供时间线区分「开始」与「恢复」 */
+  --c-violet: 92 74 122;
+  --c-teal: 42 110 107;
+}
+
+html.dark {
+  --c-paper: 16 19 21;
+  --c-surface: 23 27 30;
+  --c-raised: 28 33 37;
+  --c-ink: 230 232 230;
+  --c-graphite: 148 155 152;
+  --c-faint: 110 117 114;
+  --c-rule: 40 45 49;
+  --c-rule-strong: 55 61 65;
+  --c-shadow: 0 0 0;
+
+  --c-primary: 106 168 216;
+  --c-primary-light: 138 190 230;
+  --c-primary-dark: 78 136 182;
+
+  --c-q1: 209 106 92;
+  --c-q2: 106 168 216;
+  --c-q3: 200 156 82;
+  --c-q4: 150 163 148;
+
+  --c-status-todo: 148 155 152;
+  --c-status-doing: 106 168 216;
+  --c-status-done: 109 168 128;
+  --c-status-canceled: 96 103 100;
+  --c-status-overdue: 209 106 92;
+
+  --c-violet: 160 144 190;
+  --c-teal: 110 176 170;
+}
+
+/* ==========================================================================
+   Element Plus 变量对接
+   把组件库的默认蓝换成主色，并统一圆角、边框、文字层级
+   ========================================================================== */
+:root,
+html.dark {
+  --el-color-primary: rgb(var(--c-primary));
+  --el-color-primary-light-3: rgb(var(--c-primary-light));
+  --el-color-primary-light-5: rgb(var(--c-primary-light) / 0.62);
+  --el-color-primary-light-7: rgb(var(--c-primary-light) / 0.4);
+  --el-color-primary-light-8: rgb(var(--c-primary-light) / 0.24);
+  --el-color-primary-light-9: rgb(var(--c-primary-light) / 0.12);
+  --el-color-primary-dark-2: rgb(var(--c-primary-dark));
+
+  --el-color-danger: rgb(var(--c-q1));
+  --el-color-error: rgb(var(--c-q1));
+  --el-color-warning: rgb(var(--c-q3));
+  --el-color-success: rgb(var(--c-status-done));
+
+  --el-font-family: 'IBM Plex Sans', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --el-border-radius-base: 4px;
+  --el-border-radius-small: 3px;
+  --el-border-radius-round: 4px;
+
+  --el-text-color-primary: rgb(var(--c-ink));
+  --el-text-color-regular: rgb(var(--c-ink));
+  --el-text-color-secondary: rgb(var(--c-graphite));
+  --el-text-color-placeholder: rgb(var(--c-faint));
+  --el-text-color-disabled: rgb(var(--c-faint));
+
+  --el-border-color: rgb(var(--c-rule));
+  --el-border-color-light: rgb(var(--c-rule));
+  --el-border-color-lighter: rgb(var(--c-rule));
+  --el-border-color-extra-light: rgb(var(--c-rule));
+  --el-border-color-hover: rgb(var(--c-rule-strong));
+
+  --el-fill-color: rgb(var(--c-rule) / 0.45);
+  --el-fill-color-light: rgb(var(--c-rule) / 0.3);
+  --el-fill-color-lighter: rgb(var(--c-rule) / 0.18);
+  --el-fill-color-blank: rgb(var(--c-surface));
+
+  --el-bg-color: rgb(var(--c-surface));
+  --el-bg-color-page: rgb(var(--c-paper));
+  --el-bg-color-overlay: rgb(var(--c-raised));
+
+  --el-box-shadow-light: 0 2px 10px rgb(var(--c-shadow) / 0.08);
+  --el-box-shadow: 0 4px 18px rgb(var(--c-shadow) / 0.1);
+}
+
+/* 主按钮改为近黑：工具界面里最经得起看的选择，也避开彩色按钮的通用观感 */
+.el-button--primary {
+  --el-button-bg-color: rgb(var(--c-ink));
+  --el-button-border-color: rgb(var(--c-ink));
+  --el-button-hover-bg-color: rgb(var(--c-graphite));
+  --el-button-hover-border-color: rgb(var(--c-graphite));
+  --el-button-active-bg-color: rgb(var(--c-ink));
+  --el-button-active-border-color: rgb(var(--c-ink));
+  --el-button-text-color: rgb(var(--c-paper));
+}
+
+.el-button {
+  font-weight: 500;
+}
+
+/* 表格：去掉斑马纹与横线堆叠，只留行间一条极浅分隔线 */
+.el-table {
+  --el-table-border-color: rgb(var(--c-rule));
+  --el-table-header-bg-color: rgb(var(--c-paper));
+  --el-table-header-text-color: rgb(var(--c-graphite));
+  --el-table-row-hover-bg-color: rgb(var(--c-rule) / 0.28);
+  font-size: 13px;
+}
+
+.el-table th.el-table__cell {
+  font-size: 11px;
+  font-weight: 500;
+  /* 表头以中文为主，字距同样要压小，否则会散开 */
+  letter-spacing: 0.02em;
+}
+
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: transparent;
+}
+
+/* 分页、标签、下拉：统一到同一套圆角与字重 */
+.el-pagination {
+  --el-pagination-button-bg-color: transparent;
+  font-weight: 500;
+}
+
+.el-tag {
+  font-weight: 500;
+  border-radius: 3px;
+}
+
+.el-dialog {
+  --el-dialog-border-radius: 4px;
+  border: 1px solid rgb(var(--c-rule));
+}
+
+.el-dialog__header {
+  margin-right: 0;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgb(var(--c-rule));
+}
+
+.el-dialog__title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   基础排版
+   ========================================================================== */
+@layer base {
+  /*
+   * preflight 已关闭，必须自行补上它的边框基线。
+   * Tailwind 的 border-* 类只输出 border-width 与 border-color，
+   * border-style 一直由 preflight 的这一条提供；缺失时边框不会渲染，
+   * 表现为类名写了、计算样式里宽度颜色也对，但页面上什么都看不到。
+   */
+  *,
+  ::before,
+  ::after {
+    border-width: 0;
+    border-style: solid;
+    border-color: rgb(var(--c-rule));
+  }
+
+  /*
+   * 原生按钮的基线。否则未加 class 的 <button> 会带出系统默认的灰色底，
+   * 把「查看变更」这类纯文字按钮渲染成一个灰方块。
+   * 这里只清内边距与背景，刻意不写 border：上一条已把边框宽度归零，
+   * 若在此再写 border: 0，会把 border-style 一并压回 none，使 .border-* 类失效。
+   * Element Plus 的 .el-button 特异性更高，不受影响。
+   */
+  button {
+    padding: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  color: rgb(var(--c-ink));
+  background-color: rgb(var(--c-paper));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 键盘焦点必须可见 */
+:focus-visible {
+  outline: 2px solid rgb(var(--c-primary));
+  outline-offset: 1px;
+}
+
+/* ==========================================================================
+   组件
+   ========================================================================== */
+@layer components {
+  /* 卡片：用细边框替代投影，这是"纸面"观感的关键 */
+  .app-card {
+    @apply rounded-card border border-rule bg-surface;
+  }
+
+  /* 页头读数：数字在上、微型标签在下 */
+  .reading {
+    @apply flex flex-col gap-0.5;
+  }
+
+  /*
+   * 微型标签：字段名与分组标题。
+   * 字距刻意压小——这套界面里的标签以中文为主，中文加宽字距会显得松散，
+   * 0.04em 对西文标签也仍然成立。
+   */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.04em] text-faint;
+  }
+
+  /* 等宽读数：数字、时间、ID 统一走这里，保证纵向对齐 */
+  .readout {
+    font-family: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 选中的导航项：用左侧一道竖线标记，而不是彩色圆角块 */
+  .nav-item {
+    @apply relative flex items-center gap-2.5 rounded-card px-3 py-2 text-[13px]
+           font-medium text-graphite transition-colors hover:bg-rule/40 hover:text-ink;
+  }
+
+  .nav-item-active {
+    @apply bg-rule/50 text-ink;
+  }
+
+  .nav-item-active::before {
+    content: '';
+    @apply absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-primary;
+  }
+}
+
+/* ==========================================================================
+   刻度尺 —— 全局视觉签名
+   呼应绘图纸与时刻表；在首页它承载真实的今日时段信息
+   ========================================================================== */
+.tick-scale {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  height: 9px;
+}
+
+.tick-scale > span {
+  width: 1px;
+  height: 4px;
+  background: rgb(var(--c-rule-strong));
+  transition: height 0.15s ease, background-color 0.15s ease;
+}
+
+.tick-scale > span.is-major {
+  height: 9px;
+  background: rgb(var(--c-graphite));
+}
+
+.tick-scale > span.is-marked {
+  height: 9px;
+  background: rgb(var(--c-primary));
+}
+
+/* ==========================================================================
+   滚动条
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-rule-strong) / 0.7);
+  border: 2px solid transparent;
+  background-clip: content-box;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--c-graphite) / 0.7);
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ==========================================================================
+   动效克制：尊重系统的减弱动效设置
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

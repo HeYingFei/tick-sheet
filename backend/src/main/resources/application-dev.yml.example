@@ -1,0 +1,26 @@
+# =============================================================================
+# 本地开发配置模板
+#
+# 使用方式：
+#   1. 复制本文件为 application-dev.yml（同目录下）
+#   2. 填入真实的数据库地址与账号密码
+#   3. application-dev.yml 已在 .gitignore 中，不会被提交
+#
+# 命令： copy application-dev.yml.example application-dev.yml
+# =============================================================================
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    # TODO 替换为实际的远程 PostgreSQL 地址与库名
+    url: jdbc:postgresql://<HOST>:<PORT>/todo?currentSchema=public&ApplicationName=todo-backend
+    # TODO 替换为实际账号
+    username: <USERNAME>
+    # TODO 替换为实际密码
+    password: <PASSWORD>
+    hikari:
+      minimum-idle: 2
+      maximum-pool-size: 10
+      connection-timeout: 10000
+      # 统一会话时区，与设计方案 §4.6 保持一致
+      connection-init-sql: SET TIME ZONE 'Asia/Shanghai'
