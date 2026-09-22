@@ -2,6 +2,8 @@
 
 **一个自托管的个人任务管理系统。**
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-17456B.svg)](LICENSE)
+
 四象限优先级、操作时间线、多维统计，配合按用户隔离的数据层与完整的导出/备份能力。
 前端为单页应用，后端提供 REST 接口，数据库结构由 Flyway 版本化管理。
 
@@ -247,4 +249,6 @@ npm run build
 
 ## 许可
 
-MIT
+本项目基于 [MIT 许可证](LICENSE) 开源，可自由使用、修改与分发，需保留版权声明。
+
+Copyright (c) 2026 HeYingFei
