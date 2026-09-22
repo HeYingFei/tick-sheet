@@ -1,10 +1,14 @@
 /**
  * Liquid Glass — SVG feDisplacementMap 物理折射。
  *
- * 移植自 archisvaze/liquid-glass（MIT）的折射管线：
+ * 折射管线参考 archisvaze/liquid-glass 的实现思路：
  *   凸超椭圆表面 → Snell 剖面 → 圆角斜面位移图 + 镜面高光图
  *   → feGaussianBlur + feDisplacementMap + saturate + specular 合成
  *   → backdrop-filter: url(#id)
+ *
+ * 注意：上游仓库并未声明任何许可证（无 LICENSE 文件、README 亦未提及），
+ * 因此此处不作「移植自 …（MIT）」的表述，也不主张来自上游的授权。
+ * 若日后需要更清晰的权属，应改为按折射原理独立实现。
  *
  * 只在 Chromium 启用（backdrop-filter: url() 支持）。
  * 其它内核由 index.css 的毛玻璃材质栈回落，不依赖本模块。

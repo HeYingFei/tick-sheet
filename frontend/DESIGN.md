@@ -22,14 +22,16 @@
 - **Accent:** `--c-primary: 23 69 107`（普鲁士蓝）。每屏强引导仍以近黑主按钮承担，蓝只编码「进行中 / 聚焦」。
 - **Semantic:** 任务状态色与浅色主题一致，避免主题切换导致语义漂移。
 - **Glass optical tokens（本主题核心）:**
-  - `--glass-tint: rgb(255 255 255 / 0.22)` — 玻璃体；必须够透，否则是毛玻璃塑料
-  - `--glass-tint-heavy: rgb(255 255 255 / 0.55)` — 侧栏 / 弹窗
+  - `--glass-tint: rgb(255 255 255 / 0.14)` — 玻璃体；只托轮廓，厚度感交给 sheen 与镜缘
+  - `--glass-tint-mid: rgb(255 255 255 / 0.26)` — 中段层级
+  - `--glass-tint-heavy: rgb(255 255 255 / 0.36)` — 侧栏 / 弹窗
+  - `--glass-refraction-tint / -mid / -heavy: 0.06 / 0.1 / 0.14` — 折射开启后压到几乎不可见，否则会糊掉位移
   - `--glass-edge-hi: rgb(255 255 255 / 0.92)` — 菲涅尔上缘
   - `--glass-edge-mid: rgb(255 255 255 / 0.22)` — 环带中段
   - `--glass-fringe-cool: rgb(170 214 255 / 0.45)` — 边缘冷色散
   - `--glass-fringe-warm: rgb(255 214 228 / 0.35)` — 边缘暖色散
-  - `--glass-blur: 28px` / `--glass-saturate: 1.85` / `--glass-brightness: 1.08`
-  - `--glass-radius: 20px`（面板）/ `22px`（浮层）/ `0`（侧栏贴边）
+  - `--glass-blur: 18px` / `--glass-saturate: 1.85` / `--glass-brightness: 1.08`
+  - `--glass-radius: 20px`（面板）/ `--glass-radius-float: 22px`（浮层）/ 侧栏贴边不设圆角
 - **Usage rules:** 玻璃色只出现在 `html.glass` 表面；禁止把玻璃高光色当按钮或文字色。主 CTA 永不玻璃化。
 
 ### 3b. Typography
@@ -55,7 +57,7 @@
 
 ## 4. Accessibility
 
-- **Text contrast:** 玻璃体降至 0.22 时，正文必须仍满足 4.5:1；不足则提高局部 tint 或加深 ink，禁止降低字号。
+- **Text contrast:** 玻璃体最低降至 0.14 时，正文必须仍满足 4.5:1；不足则提高局部 tint 或加深 ink，禁止降低字号。
 - **Motion:** 光斑漂移默认允许但 `prefers-reduced-motion: reduce` 时静止；位移只用 `transform`/`opacity`。
 - **Focus indicators:** `2px solid rgb(var(--c-primary))`，offset 1px；玻璃底上保持同一焦点环。
 - **Alt text policy:** 本主题纯材质，无信息图片；装饰层 `pointer-events: none` 且不进无障碍树。
