@@ -22,7 +22,8 @@ public final class DefaultConfig {
             new Entry("default_priority", "3", "默认任务优先级：1-极高，2-高，3-中，4-低"),
             new Entry("time_format", "YYYY-MM-DD HH:mm", "时间展示格式，使用 dayjs 记号"),
             new Entry("week_start", "1", "周起始日：1-周一，7-周日"),
-            new Entry("calendar_field", "due_time", "日历视图映射字段：due_time-截止时间，start_time-开始时间")
+            new Entry("calendar_field", "due_time", "日历视图映射字段：due_time-截止时间，start_time-开始时间"),
+            new Entry("stats_window_days", "7", "统计趋势窗口：近 N 天，取值 1-90，首页与统计页共用")
     );
 
     private DefaultConfig() {

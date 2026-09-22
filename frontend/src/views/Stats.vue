@@ -12,6 +12,8 @@ const loading = ref(true)
 const range = ref('week')
 const overview = ref({})
 const completion = ref({})
+/** 趋势窗口（天）。以后端回传的生效值为准，缺省时先按本地配置渲染标题 */
+const trendDays = ref(theme.statsWindowDays)
 
 const trendChartRef = ref(null)
 const quadrantChartRef = ref(null)
@@ -172,7 +174,7 @@ async function loadAll() {
   try {
     const [ov, tr, qd, td, comp] = await Promise.all([
       getOverview(),
-      getTrend(14),
+      getTrend(),
       getQuadrantStats(),
       getTagStats(),
       getCompletion({ range: range.value })
@@ -180,6 +182,7 @@ async function loadAll() {
     overview.value = ov
     completion.value = comp
     chartData.trend = tr.items || []
+    trendDays.value = tr.days || theme.statsWindowDays
     chartData.quadrant = qd.items || []
     chartData.tags = td.items || []
     renderAll()
@@ -239,7 +242,7 @@ watch(() => theme.mode, () => setTimeout(renderAll, 0))
     <div class="grid gap-5 lg:grid-cols-2">
       <section class="app-card">
         <header class="border-b border-rule px-5 py-3">
-          <h2 class="text-[13px] font-semibold text-ink">任务趋势（近 14 天）</h2>
+          <h2 class="text-[13px] font-semibold text-ink">任务趋势（近 {{ trendDays }} 天）</h2>
         </header>
         <div ref="trendChartRef" class="px-3 py-3" style="height: 268px" />
       </section>

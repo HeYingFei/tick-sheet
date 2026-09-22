@@ -16,6 +16,8 @@ const theme = useThemeStore()
 const loading = ref(true)
 const overview = ref({})
 const trend = ref([])
+/** 趋势窗口（天）。以后端回传的生效值为准，缺省时先按本地配置渲染标题 */
+const trendDays = ref(theme.statsWindowDays)
 const quadrantData = ref([])
 const todoTasks = ref([])
 
@@ -64,12 +66,13 @@ async function load() {
   try {
     const [ov, tr, qd, tasks] = await Promise.all([
       getOverview(),
-      getTrend(7),
+      getTrend(),
       getQuadrantStats(),
       pageTasks({ status: '0,1', sortBy: 'dueTime', sortOrder: 'asc', size: 10 })
     ])
     overview.value = ov
     trend.value = tr.items || []
+    trendDays.value = tr.days || theme.statsWindowDays
     quadrantData.value = qd.items || []
     todoTasks.value = tasks.records || []
     renderCharts()
@@ -302,7 +305,7 @@ watch(() => theme.mode, () => setTimeout(renderCharts, 0))
     <div class="grid gap-5 lg:grid-cols-2">
       <section class="app-card">
         <header class="border-b border-rule px-5 py-3">
-          <h2 class="text-[13px] font-semibold text-ink">近 7 日新增与完成</h2>
+          <h2 class="text-[13px] font-semibold text-ink">近 {{ trendDays }} 日新增与完成</h2>
         </header>
         <div ref="trendChartRef" class="px-3 py-3" style="height: 236px" />
       </section>

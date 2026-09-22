@@ -17,9 +17,18 @@ const theme = useThemeStore()
 const auth = useAuthStore()
 const configForm = ref({
   theme_mode: 'light', default_priority: '3', time_format: 'YYYY-MM-DD HH:mm',
-  week_start: '1', calendar_field: 'due_time'
+  week_start: '1', calendar_field: 'due_time', stats_window_days: '7'
 })
 const configLoading = ref(false)
+
+/**
+ * 统计周期用 el-input-number 需要数字，而配置接口收发的是字符串，
+ * 这里做一层转换，避免两侧类型不一致导致保存时被判定为「无变化」。
+ */
+const statsWindowDays = computed({
+  get: () => Number(configForm.value.stats_window_days) || 7,
+  set: (value) => { configForm.value.stats_window_days = String(value ?? 7) }
+})
 
 // 标签管理
 const tags = ref([])
@@ -285,6 +294,20 @@ function onLogout() {
               <el-radio value="due_time">截止时间</el-radio>
               <el-radio value="start_time">开始时间</el-radio>
             </el-radio-group>
+          </el-form-item>
+          <el-form-item label="统计周期">
+            <div class="flex items-center gap-2">
+              <el-input-number
+                v-model="statsWindowDays"
+                :min="1"
+                :max="90"
+                :step="1"
+                controls-position="right"
+                class="!w-32"
+                @change="saveConfig"
+              />
+              <span class="text-[13px] text-graphite">天，取值 1-90，首页与统计页共用</span>
+            </div>
           </el-form-item>
         </el-form>
       </div>

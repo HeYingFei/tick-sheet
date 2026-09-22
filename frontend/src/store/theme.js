@@ -23,6 +23,8 @@ export const useThemeStore = defineStore('theme', () => {
   const defaultPriority = ref(3)
   const weekStart = ref(1)
   const calendarField = ref('due_time')
+  /** 统计趋势窗口（天），首页与统计页共用 */
+  const statsWindowDays = ref(7)
   const loaded = ref(false)
 
   function apply() {
@@ -65,6 +67,7 @@ export const useThemeStore = defineStore('theme', () => {
       if (config?.default_priority) defaultPriority.value = Number(config.default_priority)
       if (config?.week_start) weekStart.value = Number(config.week_start)
       if (config?.calendar_field) calendarField.value = config.calendar_field
+      if (config?.stats_window_days) statsWindowDays.value = Number(config.stats_window_days)
       loaded.value = true
     } catch {
       // 后端未启动时保持本地默认值
@@ -78,6 +81,7 @@ export const useThemeStore = defineStore('theme', () => {
     defaultPriority,
     weekStart,
     calendarField,
+    statsWindowDays,
     loaded,
     apply,
     setMode,

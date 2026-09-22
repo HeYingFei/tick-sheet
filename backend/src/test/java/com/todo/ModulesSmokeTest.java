@@ -74,6 +74,33 @@ class ModulesSmokeTest {
     }
 
     @Test
+    @DisplayName("趋势：按配置的统计周期返回，未指定天数时以配置为准")
+    void trendFollowsConfiguredWindow() throws Exception {
+        // 顺带覆盖「保存新增配置项」这条路径：stats_window_days 不是 V1 建的列，靠这里补齐
+        mockMvc.perform(put("/api/config")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stats_window_days\":\"30\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.stats_window_days").value("30"));
+
+        JsonNode data = data(mockMvc.perform(get("/api/stats/trend")).andReturn());
+        assertThat(data.get("days").asInt()).isEqualTo(30);
+        assertThat(data.get("items")).hasSize(30);
+    }
+
+    @Test
+    @DisplayName("趋势：超出上限的配置被收敛到 90")
+    void trendClampsConfiguredWindow() throws Exception {
+        mockMvc.perform(put("/api/config")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"stats_window_days\":\"9999\"}"))
+                .andExpect(status().isOk());
+
+        JsonNode data = data(mockMvc.perform(get("/api/stats/trend")).andReturn());
+        assertThat(data.get("days").asInt()).isEqualTo(90);
+    }
+
+    @Test
     @DisplayName("象限分布：返回 4 个象限")
     void quadrantStatsReturns4() throws Exception {
         JsonNode data = data(mockMvc.perform(get("/api/stats/quadrant")).andReturn());

@@ -37,9 +37,16 @@ public class StatsService {
 
     private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
 
+    /** 用户未配置趋势窗口时的默认天数 */
+    private static final int DEFAULT_TREND_DAYS = 7;
+    /** 趋势窗口上限，避免一次拉取过多数据 */
+    private static final int MAX_TREND_DAYS = 90;
+
     private final TaskMapper taskMapper;
     private final TaskTagMapper taskTagMapper;
     private final TagService tagService;
+    /** 趋势窗口默认取自用户配置 stats_window_days */
+    private final ConfigService configService;
 
     /** 仪表盘概览 */
     public StatsOverviewVO overview() {
@@ -107,9 +114,13 @@ public class StatsService {
         return vo;
     }
 
-    /** 近 N 日趋势 */
+    /**
+     * 近 N 日趋势。
+     *
+     * <p>未显式指定天数时取用户配置的 {@code stats_window_days}，使首页与统计页共用同一口径。
+     */
     public TrendVO trend(Integer days) {
-        int n = days == null || days < 1 ? 7 : Math.min(days, 90);
+        int n = resolveTrendDays(days);
         LocalDate today = OffsetDateTime.now(ZONE).toLocalDate();
         LocalDate startDate = today.minusDays(n - 1);
         OffsetDateTime rangeStart = startDate.atStartOfDay(ZONE).toOffsetDateTime();
@@ -151,6 +162,7 @@ public class StatsService {
             item.setDoneCount(counts[1]);
             items.add(item);
         }
+        vo.setDays(n);
         vo.setItems(items);
         return vo;
     }
@@ -317,6 +329,26 @@ public class StatsService {
             }
             default -> throw com.todo.common.BizException.paramInvalid("不支持的时间范围: " + range);
         };
+    }
+
+    /**
+     * 解析生效的趋势窗口。
+     *
+     * <p>显式传参优先；未传或非法时读用户配置，配置也非法则回落默认值，最终收敛到 1..MAX。
+     */
+    private int resolveTrendDays(Integer days) {
+        int requested = days != null && days >= 1
+                ? days
+                : parseTrendDays(configService.get("stats_window_days", String.valueOf(DEFAULT_TREND_DAYS)));
+        return Math.max(1, Math.min(requested, MAX_TREND_DAYS));
+    }
+
+    private int parseTrendDays(String raw) {
+        try {
+            return Integer.parseInt(raw == null ? "" : raw.trim());
+        } catch (NumberFormatException e) {
+            return DEFAULT_TREND_DAYS;
+        }
     }
 
     private static double round2(double value) {

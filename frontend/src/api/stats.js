@@ -11,7 +11,11 @@ export const getTimelineLogs = (params) => request.get('/timeline/logs', { param
 /** 统计接口，口径见设计方案 §4.7 */
 export const getOverview = () => request.get('/stats/overview')
 
-export const getTrend = (days = 7) => request.get('/stats/trend', { params: { days } })
+/**
+ * 趋势。不传 days 时由后端取用户配置的 stats_window_days，
+ * 首页与统计页因此共用同一口径，标题也不会与实际曲线不一致。
+ */
+export const getTrend = (days) => request.get('/stats/trend', { params: days ? { days } : {} })
 
 export const getQuadrantStats = () => request.get('/stats/quadrant')
 

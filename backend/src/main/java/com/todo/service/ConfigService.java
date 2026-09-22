@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.todo.common.BizException;
 import com.todo.entity.SystemConfig;
 import com.todo.mapper.SystemConfigMapper;
+import com.todo.support.DefaultConfig;
 import com.todo.support.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -24,16 +24,25 @@ public class ConfigService {
 
     private final SystemConfigMapper systemConfigMapper;
 
-    /** 返回全部配置，保持插入顺序 */
+    /**
+     * 返回全部配置，顺序与 {@link DefaultConfig#ENTRIES} 一致。
+     *
+     * <p>以代码中的默认项定义为骨架，再覆盖该用户库里的值。这样后加的配置项对老用户也能
+     * 立刻读到默认值，不必依赖启动时的补键逻辑，也不会因为缺少行而从前端消失。
+     */
     public Map<String, String> getAll() {
-        Long userId = UserContext.getUserId();
-        return systemConfigMapper.selectList(Wrappers.<SystemConfig>lambdaQuery()
-                        .eq(SystemConfig::getUserId, userId))
+        Map<String, String> stored = systemConfigMapper.selectList(Wrappers.<SystemConfig>lambdaQuery()
+                        .eq(SystemConfig::getUserId, UserContext.getUserId()))
                 .stream().collect(Collectors.toMap(
-                SystemConfig::getConfigKey,
-                SystemConfig::getConfigValue,
-                (a, b) -> b,
-                LinkedHashMap::new));
+                        SystemConfig::getConfigKey,
+                        SystemConfig::getConfigValue,
+                        (a, b) -> b));
+
+        Map<String, String> result = new LinkedHashMap<>();
+        for (DefaultConfig.Entry entry : DefaultConfig.ENTRIES) {
+            result.put(entry.key(), stored.getOrDefault(entry.key(), entry.value()));
+        }
+        return result;
     }
 
     public String get(String key, String defaultValue) {
@@ -43,7 +52,10 @@ public class ConfigService {
     /**
      * 批量更新配置。
      *
-     * <p>只接受已存在的配置键：配置文件是白名单，避免通过接口写入任意键值。
+     * <p>白名单以 {@link DefaultConfig#ENTRIES} 为准，而不是库里现有的行：
+     * 若以现有行为准，用户还没有的新增配置项会被误判为「不支持」。
+     *
+     * <p>用户缺少对应行时按默认定义补齐后写入，因此新增配置项对存量用户同样可保存。
      */
     @Transactional
     public Map<String, String> updateAll(Map<String, String> values) {
@@ -51,23 +63,40 @@ public class ConfigService {
             throw BizException.paramInvalid("配置内容不能为空");
         }
 
-        List<SystemConfig> existing = systemConfigMapper.selectList(
-                Wrappers.<SystemConfig>lambdaQuery().eq(SystemConfig::getUserId, UserContext.getUserId()));
-        Set<String> knownKeys = existing.stream()
-                .map(SystemConfig::getConfigKey)
-                .collect(Collectors.toSet());
+        Long userId = UserContext.getUserId();
+        Map<String, DefaultConfig.Entry> supported = DefaultConfig.ENTRIES.stream()
+                .collect(Collectors.toMap(DefaultConfig.Entry::key, entry -> entry));
 
         List<String> unknown = values.keySet().stream()
-                .filter(key -> !knownKeys.contains(key))
+                .filter(key -> !supported.containsKey(key))
                 .sorted()
                 .toList();
         if (!unknown.isEmpty()) {
             throw BizException.paramInvalid("不支持的配置项: " + String.join(", ", unknown));
         }
 
-        for (SystemConfig config : existing) {
-            String newValue = values.get(config.getConfigKey());
-            if (newValue != null && !newValue.equals(config.getConfigValue())) {
+        Map<String, SystemConfig> existing = systemConfigMapper.selectList(
+                        Wrappers.<SystemConfig>lambdaQuery().eq(SystemConfig::getUserId, userId))
+                .stream().collect(Collectors.toMap(
+                        SystemConfig::getConfigKey, config -> config, (a, b) -> a));
+
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            String key = entry.getKey();
+            String newValue = entry.getValue();
+            if (newValue == null) {
+                continue;
+            }
+
+            SystemConfig config = existing.get(key);
+            if (config == null) {
+                DefaultConfig.Entry definition = supported.get(key);
+                SystemConfig created = new SystemConfig();
+                created.setConfigKey(key);
+                created.setConfigValue(newValue);
+                created.setConfigDesc(definition.desc());
+                created.setUserId(userId);
+                systemConfigMapper.insert(created);
+            } else if (!newValue.equals(config.getConfigValue())) {
                 config.setConfigValue(newValue);
                 systemConfigMapper.updateById(config);
             }
