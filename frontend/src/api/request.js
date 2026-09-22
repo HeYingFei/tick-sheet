@@ -11,15 +11,27 @@ import { ElMessage } from 'element-plus'
  * 因此成功分支直接返回 data；失败分支统一弹错误提示并 reject。
  */
 /**
- * 后端地址。
+ * 后端地址。取值优先级（高 → 低）：
  *
- * 前端与后端不同源，直接按当前页面所在主机拼后端端口，不依赖 Vite 代理：
- * 无论用 localhost、127.0.0.1、[::1] 还是局域网 IP 打开页面，
- * 都能连到同一台机器上的后端。跨域由后端 app.cors.allowed-origin-patterns 放行。
+ *   1. 运行时配置 public/apiConfig.js 的 apiBaseUrl
+ *      —— 现场可直接编辑，改地址不必重新构建
+ *   2. 构建时注入的 VITE_API_BASE_URL
+ *   3. 按当前页面主机名拼 8080
+ *      —— 不依赖 Vite 代理：无论用 localhost、127.0.0.1、[::1] 还是局域网 IP
+ *         打开页面，都能连到同一台机器上的后端
  *
- * 需要指向别的后端时，用 VITE_API_BASE_URL 覆盖即可。
+ * 跨域由后端 app.cors.allowed-origin-patterns 放行。
  */
+const runtimeConfig = window.__TICKSHEET_CONFIG__
+if (!runtimeConfig) {
+  console.warn(
+    '[config] 未加载到 runtime config（public/apiConfig.js）。' +
+      '将按页面主机名推导后端地址；若已修改该文件，请确认它被部署到了站点根目录。'
+  )
+}
+
 const API_BASE_URL =
+  runtimeConfig?.apiBaseUrl ||
   import.meta.env.VITE_API_BASE_URL ||
   `${window.location.protocol}//${window.location.hostname}:8080/api`
 
