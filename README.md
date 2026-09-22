@@ -14,6 +14,7 @@
 - [功能特性](#功能特性)
 - [技术栈](#技术栈)
 - [快速开始](#快速开始)
+- [部署到 nginx](#部署到-nginx)
 - [项目结构](#项目结构)
 - [设计要点](#设计要点)
 - [接口概览](#接口概览)
@@ -142,6 +143,76 @@ window.__TICKSHEET_CONFIG__ = {
 该文件会被原样拷贝到产物根目录，所以部署后也可以直接改产物里的那一份，刷新页面即生效。
 
 取值优先级：运行时配置 > 构建时 `VITE_API_BASE_URL` > 主机名推导。
+
+---
+
+## 部署到 nginx
+
+### 1. 构建（子路径部署必须带 base）
+
+产物默认按根路径生成。若部署在子路径下（例如 `http://192.168.1.204:8081/todo/`），构建时必须把 `base` 设成同一个路径：
+
+```bash
+cd frontend
+npm run build -- --base=/todo/
+```
+
+把 `frontend/dist/` 里的**内容**拷到 nginx 的站点目录即可。
+
+> `index.html` 中的 `apiConfig.js` 与 `favicon.svg` 都写成 `%BASE_URL%` 前缀，会跟随 `base` 自动调整，子路径下不会 404。
+
+### 2. nginx 配置
+
+```nginx
+server {
+    listen       8081;                            # 对外访问端口
+    server_name  _;
+
+    root  /usr/share/nginx/webapps;               # 站点父目录
+    index index.html;
+
+    location /todo/ {                             # 与 --base 保持一致
+        # history 路由回退：找不到的路径一律交给 index.html
+        try_files $uri $uri/ /todo/index.html;
+    }
+
+    # 运行时配置不缓存，保证改了后端地址刷新即生效
+    location = /todo/apiConfig.js {
+        add_header Cache-Control "no-cache";
+    }
+}
+```
+
+> 前端路由是 HTML5 history 模式（URL 中无 `#`），`try_files` 那行必须写。
+> 否则在 `/todo/tasks` 这类页面按 F5 会 404——这与后端无关，是纯前端部署问题。
+
+### 3. 指定后端地址
+
+后端地址**不打进产物**，而是运行时从 `apiConfig.js` 读取，改地址不必重新构建。编辑产物里的那一份：
+
+```js
+window.__TICKSHEET_CONFIG__ = {
+  apiBaseUrl: 'http://192.168.1.204:5546/api'   // 后端 jar 所在机器
+}
+```
+
+本地开发（`npm run dev`）读的是同一份 `frontend/public/apiConfig.js`，因此**一份配置同时覆盖开发与部署两种环境**。
+
+> 该文件随仓库公开，默认值为空字符串，请勿把真实内网地址提交上去。
+
+### 4. 后端与跨域
+
+```bash
+java -jar backend/target/todo-backend-1.0.0.jar
+```
+
+默认 `app.cors.allowed-origin-patterns: "*"` 已放行所有来源；正式环境建议收紧为前端实际来源：
+
+```yaml
+app:
+  cors:
+    allowed-origin-patterns: "http://192.168.1.204:8081"
+```
 
 ---
 
