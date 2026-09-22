@@ -51,14 +51,22 @@ class SchemaVerificationTest {
 
     @Test
     void systemConfigShouldBeSeeded() {
-        Integer count = jdbcTemplate.queryForObject("select count(*) from system_config", Integer.class);
-        assertThat(count).isEqualTo(5);
+        // 只断言种子键存在，不断言全局行数：配置按用户各存一份，
+        // 注册第二个账号就会变成 10 行，用精确行数会误报。
+        List<String> keys = jdbcTemplate.queryForList(
+                "select distinct config_key from system_config", String.class);
+        assertThat(keys).contains(
+                "theme_mode", "default_priority", "time_format", "week_start", "calendar_field");
     }
 
     @Test
     void tagsShouldBeSeeded() {
-        Integer count = jdbcTemplate.queryForObject("select count(*) from tag", Integer.class);
-        assertThat(count).isEqualTo(4);
+        // 同理：标签是用户可增删的业务数据（V1 种下 工作/学习/生活/紧急），
+        // 断言总数会被用户新增标签打破，这里只断言种子标签存在。
+        // 不加 is_delete 过滤：用户删掉某个种子标签时行仍在，属正常情况。
+        List<String> names = jdbcTemplate.queryForList(
+                "select distinct name from tag", String.class);
+        assertThat(names).contains("工作", "学习", "生活", "紧急");
     }
 
     @Test

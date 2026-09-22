@@ -44,11 +44,21 @@ class ApiSmokeTest {
     @Test
     @DisplayName("GET /api/config 返回初始化配置")
     void getConfigReturnsSeededValues() throws Exception {
+        // 测试运行在真实开发库上，配置会被用户在界面上改掉（例如切换主题），
+        // 直接断言就会读到用户值而非出厂值。这里先清空数据触发默认配置重建，
+        // 再断言出厂值。用例运行在事务中，结束时整体回滚，不影响开发库。
+        mockMvc.perform(delete("/api/migration/data"))
+                .andExpect(status().isOk());
+
         mockMvc.perform(get("/api/config"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.theme_mode").value("light"))
                 .andExpect(jsonPath("$.data.time_format").value("YYYY-MM-DD HH:mm"))
+                .andExpect(jsonPath("$.data.default_priority").value("3"))
+                .andExpect(jsonPath("$.data.week_start").value("1"))
+                .andExpect(jsonPath("$.data.calendar_field").value("due_time"))
+                .andExpect(jsonPath("$.data.stats_window_days").value("7"))
                 .andExpect(jsonPath("$.timestamp").isNumber());
     }
 
