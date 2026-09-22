@@ -123,6 +123,592 @@ html.dark {
   --el-box-shadow: 0 4px 18px rgb(var(--c-shadow) / 0.1);
 }
 
+/* ==========================================================================
+   液态玻璃主题
+   --------------------------------------------------------------------------
+   参考 archisvaze/liquid-glass 的光学模型，观感拆成五层：
+
+   ① 背景光场   有浓淡边界的冷色光斑 + 细网格——玻璃的透光感来自「透过它看到的东西」
+   ② 边缘折射   Chromium 上由 SVG feDisplacementMap 做 Snell 透镜位移（见 liquidGlass.js）
+                非 Chromium 回落到 ③④⑤ 的毛玻璃材质栈
+   ③ 玻璃体     极低 alpha 的 tint（折射开启时约 0.06，几乎不可见）
+   ④ 镜缘       gradient border 画菲涅尔环带，中段掺冷暖色散
+   ⑤ 厚度感     inset 受光高光 + 双层外投影
+
+   折射开启后模糊几乎归零——继续叠高 blur 会把位移「洗」回毛玻璃。
+   材质全部画在 background / box-shadow，不用会盖住文字的伪元素，
+   也禁止 mask-composite（项目已验证失效会整面铺色）。
+   ========================================================================== */
+html.glass {
+  /* 基底比浅色主题更亮更冷，让彩色光斑浮在上面而不显脏 */
+  --c-paper: 234 239 247;
+  --c-surface: 252 253 255;
+  --c-raised: 255 255 255;
+  --c-ink: 22 29 40;
+  --c-graphite: 84 96 114;
+  --c-faint: 134 146 164;
+  --c-rule: 206 217 231;
+  --c-rule-strong: 178 192 212;
+  --c-shadow: 28 42 60;
+
+  /* 语义色与浅色主题一致，切换主题时不发生语义漂移 */
+  --c-primary: 23 69 107;
+  --c-primary-light: 44 103 150;
+  --c-primary-dark: 15 48 73;
+  --c-q1: 166 58 46;
+  --c-q2: 23 69 107;
+  --c-q3: 165 118 42;
+  --c-q4: 124 138 123;
+  --c-status-todo: 84 96 114;
+  --c-status-doing: 23 69 107;
+  --c-status-done: 47 105 74;
+  --c-status-canceled: 158 168 178;
+  --c-status-overdue: 166 58 46;
+  --c-violet: 92 74 122;
+  --c-teal: 42 110 107;
+
+  /* ---- 光学材质令牌 ---- */
+  /* 回落路径：CSS 毛玻璃用的模糊；折射开启后改走 --liquid-filter，blur 接近 0 */
+  --glass-blur: 18px;
+  --glass-saturate: 1.85;
+  --glass-brightness: 1.08;
+  /*
+   * tint 只托轮廓，厚度感由 sheen、镜缘与 inset 高光撑起。
+   * --glass-refraction-tint：折射开启后压到几乎不可见，否则会糊掉位移。
+   */
+  --glass-tint: rgb(255 255 255 / 0.14);
+  --glass-tint-mid: rgb(255 255 255 / 0.26);
+  --glass-tint-heavy: rgb(255 255 255 / 0.36);
+  --glass-refraction-tint: rgb(255 255 255 / 0.06);
+  --glass-refraction-tint-mid: rgb(255 255 255 / 0.1);
+  --glass-refraction-tint-heavy: rgb(255 255 255 / 0.14);
+  --glass-edge-hi: rgb(255 255 255 / 0.92);
+  --glass-edge-mid: rgb(255 255 255 / 0.22);
+  --glass-fringe-cool: rgb(170 214 255 / 0.45);
+  --glass-fringe-warm: rgb(255 214 228 / 0.35);
+  --glass-radius: 20px;
+  --glass-radius-float: 22px;
+
+  /*
+   * 镜面 sheen：118° 从左上打光。
+   * 层叠顺序 = 上层在前：sheen → 体色 →（border-box 上的）镜缘。
+   */
+  --glass-sheen: linear-gradient(
+    118deg,
+    rgb(255 255 255 / 0.42) 0%,
+    rgb(255 255 255 / 0.08) 26%,
+    rgb(255 255 255 / 0.02) 48%,
+    rgb(255 255 255 / 0.06) 68%,
+    rgb(255 255 255 / 0.22) 100%
+  );
+  --glass-rim: linear-gradient(
+    142deg,
+    var(--glass-edge-hi) 0%,
+    var(--glass-fringe-cool) 16%,
+    var(--glass-edge-mid) 40%,
+    var(--glass-fringe-warm) 58%,
+    var(--glass-edge-mid) 78%,
+    rgb(255 255 255 / 0.78) 100%
+  );
+  /* 厚度阴影：上缘受光最强，底部内侧略沉，左右收边 + 三层外投影 */
+  --glass-depth:
+    inset 0 1px 0 rgb(255 255 255 / 0.88),
+    inset 0 2px 6px rgb(255 255 255 / 0.28),
+    inset 0 -2px 8px rgb(28 42 60 / 0.05),
+    inset 1px 0 0 rgb(255 255 255 / 0.28),
+    inset -1px 0 0 rgb(255 255 255 / 0.24),
+    0 1px 2px rgb(28 42 60 / 0.05),
+    0 8px 22px rgb(28 42 60 / 0.08),
+    0 24px 56px rgb(28 42 60 / 0.14);
+  --glass-depth-hover:
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    inset 0 2px 8px rgb(255 255 255 / 0.38),
+    inset 0 -2px 8px rgb(28 42 60 / 0.05),
+    inset 1px 0 0 rgb(255 255 255 / 0.32),
+    inset -1px 0 0 rgb(255 255 255 / 0.28),
+    0 2px 4px rgb(28 42 60 / 0.05),
+    0 12px 28px rgb(28 42 60 / 0.1),
+    0 32px 68px rgb(28 42 60 / 0.16);
+  --glass-depth-float:
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    inset 0 2px 8px rgb(255 255 255 / 0.32),
+    inset 0 -2px 10px rgb(28 42 60 / 0.06),
+    0 2px 6px rgb(28 42 60 / 0.06),
+    0 18px 40px rgb(28 42 60 / 0.14),
+    0 36px 88px rgb(28 42 60 / 0.22);
+
+  /* 圆角整体放大：连续圆润轮廓是液态玻璃区别于普通毛玻璃的特征之一 */
+  --el-border-radius-base: 12px;
+  --el-border-radius-small: 9px;
+
+  /* Element Plus 组件跟随玻璃层；输入类控件保留更高不透明度，保证长文本可读 */
+  --el-bg-color: rgb(255 255 255 / 0.22);
+  --el-bg-color-overlay: rgb(255 255 255 / 0.72);
+  --el-bg-color-page: transparent;
+  --el-fill-color: rgb(255 255 255 / 0.3);
+  --el-fill-color-light: rgb(255 255 255 / 0.22);
+  --el-fill-color-lighter: rgb(255 255 255 / 0.14);
+  --el-fill-color-blank: rgb(255 255 255 / 0.22);
+  --el-input-bg-color: rgb(255 255 255 / 0.58);
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgb(255 255 255 / 0.42);
+  --el-table-row-hover-bg-color: rgb(255 255 255 / 0.55);
+  --el-border-color: rgb(255 255 255 / 0.55);
+  --el-border-color-light: rgb(255 255 255 / 0.42);
+  --el-border-color-lighter: rgb(255 255 255 / 0.32);
+  --el-border-color-extra-light: rgb(255 255 255 / 0.22);
+  --el-box-shadow-light: 0 10px 34px rgb(28 42 60 / 0.12);
+  --el-box-shadow: 0 20px 56px rgb(28 42 60 / 0.16);
+  --el-mask-color: rgb(234 239 247 / 0.45);
+  --el-dialog-border-radius: var(--glass-radius-float);
+  --el-card-border-color: transparent;
+}
+
+/* ==========================================================================
+   液态玻璃 · 深色
+   --------------------------------------------------------------------------
+   不是把浅色版反过来：底色近乎纯黑，玻璃靠「被照亮」而非「被涂白」。
+   tint 压到几乎不可见，厚度感全部交给提亮后的 brightness 与相对更亮的镜缘。
+   光场保留冷色，压低亮度、提高饱和，透过来是一层幽光而不是彩色斑块。
+   ========================================================================== */
+html.glass.dark {
+  --c-paper: 13 16 21;
+  --c-surface: 20 24 30;
+  --c-raised: 26 31 38;
+  --c-ink: 228 232 236;
+  --c-graphite: 146 155 166;
+  --c-faint: 106 116 130;
+  --c-rule: 38 45 55;
+  --c-rule-strong: 54 63 76;
+  --c-shadow: 0 0 0;
+
+  --c-primary: 106 168 216;
+  --c-primary-light: 138 190 230;
+  --c-primary-dark: 78 136 182;
+  --c-q1: 209 106 92;
+  --c-q2: 106 168 216;
+  --c-q3: 200 156 82;
+  --c-q4: 150 163 148;
+  --c-status-todo: 146 155 166;
+  --c-status-doing: 106 168 216;
+  --c-status-done: 109 168 128;
+  --c-status-canceled: 96 103 100;
+  --c-status-overdue: 209 106 92;
+  --c-violet: 160 144 190;
+  --c-teal: 110 176 170;
+
+  --glass-blur: 18px;
+  --glass-saturate: 1.6;
+  --glass-brightness: 1.16;
+  --glass-tint: rgb(255 255 255 / 0.08);
+  --glass-tint-mid: rgb(255 255 255 / 0.12);
+  --glass-tint-heavy: rgb(255 255 255 / 0.18);
+  --glass-refraction-tint: rgb(255 255 255 / 0.04);
+  --glass-refraction-tint-mid: rgb(255 255 255 / 0.07);
+  --glass-refraction-tint-heavy: rgb(255 255 255 / 0.1);
+  --glass-edge-hi: rgb(255 255 255 / 0.6);
+  --glass-edge-mid: rgb(255 255 255 / 0.1);
+  --glass-fringe-cool: rgb(126 186 255 / 0.34);
+  --glass-fringe-warm: rgb(255 172 200 / 0.28);
+
+  /* sheen 在深色下要收敛：浅色版 0.42 的起手高光落在暗底上会像一道划痕 */
+  --glass-sheen: linear-gradient(
+    118deg,
+    rgb(255 255 255 / 0.16) 0%,
+    rgb(255 255 255 / 0.05) 26%,
+    rgb(255 255 255 / 0.01) 48%,
+    rgb(255 255 255 / 0.03) 68%,
+    rgb(255 255 255 / 0.12) 100%
+  );
+  --glass-rim: linear-gradient(
+    142deg,
+    var(--glass-edge-hi) 0%,
+    var(--glass-fringe-cool) 16%,
+    var(--glass-edge-mid) 40%,
+    var(--glass-fringe-warm) 58%,
+    var(--glass-edge-mid) 78%,
+    rgb(255 255 255 / 0.36) 100%
+  );
+  --glass-depth:
+    inset 0 1px 0 rgb(255 255 255 / 0.42),
+    inset 0 2px 6px rgb(255 255 255 / 0.1),
+    inset 0 -2px 8px rgb(0 0 0 / 0.3),
+    inset 1px 0 0 rgb(255 255 255 / 0.12),
+    inset -1px 0 0 rgb(255 255 255 / 0.1),
+    0 1px 2px rgb(0 0 0 / 0.4),
+    0 10px 26px rgb(0 0 0 / 0.44),
+    0 28px 64px rgb(0 0 0 / 0.52);
+  --glass-depth-hover:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    inset 0 2px 8px rgb(255 255 255 / 0.14),
+    inset 0 -2px 8px rgb(0 0 0 / 0.3),
+    inset 1px 0 0 rgb(255 255 255 / 0.16),
+    inset -1px 0 0 rgb(255 255 255 / 0.12),
+    0 2px 4px rgb(0 0 0 / 0.4),
+    0 14px 32px rgb(0 0 0 / 0.48),
+    0 36px 76px rgb(0 0 0 / 0.56);
+  --glass-depth-float:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    inset 0 2px 8px rgb(255 255 255 / 0.12),
+    inset 0 -2px 10px rgb(0 0 0 / 0.34),
+    0 4px 12px rgb(0 0 0 / 0.4),
+    0 24px 56px rgb(0 0 0 / 0.55);
+
+  --el-bg-color: rgb(255 255 255 / 0.06);
+  --el-bg-color-overlay: rgb(26 31 38 / 0.88);
+  --el-fill-color: rgb(255 255 255 / 0.08);
+  --el-fill-color-light: rgb(255 255 255 / 0.06);
+  --el-fill-color-lighter: rgb(255 255 255 / 0.04);
+  --el-fill-color-blank: rgb(255 255 255 / 0.06);
+  --el-input-bg-color: rgb(255 255 255 / 0.08);
+  --el-table-header-bg-color: rgb(255 255 255 / 0.05);
+  --el-table-row-hover-bg-color: rgb(255 255 255 / 0.08);
+  --el-border-color: rgb(255 255 255 / 0.16);
+  --el-border-color-light: rgb(255 255 255 / 0.12);
+  --el-border-color-lighter: rgb(255 255 255 / 0.08);
+  --el-border-color-extra-light: rgb(255 255 255 / 0.06);
+  --el-box-shadow-light: 0 10px 34px rgb(0 0 0 / 0.4);
+  --el-box-shadow: 0 20px 56px rgb(0 0 0 / 0.5);
+  --el-mask-color: rgb(0 0 0 / 0.55);
+}
+
+/* ---- 背景光场 ---- */
+html.glass body {
+  background-color: rgb(var(--c-paper));
+}
+
+html.glass body::before {
+  content: '';
+  position: fixed;
+  inset: -8%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 48% at 10% 4%, rgb(72 124 188 / 0.58), transparent 58%),
+    radial-gradient(ellipse 48% 52% at 90% 8%, rgb(48 148 156 / 0.48), transparent 55%),
+    radial-gradient(ellipse 58% 50% at 82% 92%, rgb(112 88 168 / 0.42), transparent 58%),
+    radial-gradient(ellipse 50% 46% at 12% 96%, rgb(188 108 148 / 0.34), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgb(140 170 210 / 0.2), transparent 70%);
+  animation: glass-drift 34s ease-in-out infinite alternate;
+}
+
+/* 深色光场：压亮度、提饱和，透出来是一层幽光 */
+html.glass.dark body::before {
+  background:
+    radial-gradient(ellipse 55% 48% at 10% 4%, rgb(46 96 168 / 0.62), transparent 58%),
+    radial-gradient(ellipse 48% 52% at 90% 8%, rgb(30 118 128 / 0.5), transparent 55%),
+    radial-gradient(ellipse 58% 50% at 82% 92%, rgb(84 62 136 / 0.46), transparent 58%),
+    radial-gradient(ellipse 50% 46% at 12% 96%, rgb(140 72 108 / 0.34), transparent 55%),
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgb(64 88 124 / 0.22), transparent 70%);
+}
+
+/* 细网格：透过玻璃能看见的细节，也是刻度尺向背景的延伸 */
+html.glass body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(to right, rgb(28 42 60 / 0.038) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(to bottom, rgb(28 42 60 / 0.038) 0 1px, transparent 1px 34px);
+}
+
+html.glass.dark body::after {
+  background-image:
+    repeating-linear-gradient(to right, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(to bottom, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 34px);
+}
+
+@keyframes glass-drift {
+  from {
+    transform: translate3d(-4%, -3%, 0) scale(1.06);
+  }
+  to {
+    transform: translate3d(5%, 4%, 0) scale(1.14);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.glass body::before {
+    animation: none;
+  }
+}
+
+/* ---- 材质表面（回落路径：CSS 毛玻璃） ---- */
+html.glass .app-card,
+html.glass .el-card {
+  position: relative;
+  border-radius: var(--glass-radius);
+  border: 1px solid transparent;
+  background:
+    var(--glass-sheen) padding-box,
+    linear-gradient(var(--glass-tint), var(--glass-tint)) padding-box,
+    var(--glass-rim) border-box;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate))
+    brightness(var(--glass-brightness));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate))
+    brightness(var(--glass-brightness));
+  box-shadow: var(--glass-depth);
+  transition:
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+html.glass .app-card:hover,
+html.glass .el-card:hover {
+  box-shadow: var(--glass-depth-hover);
+}
+
+html.glass .el-dialog,
+html.glass .el-message-box {
+  position: relative;
+  border-radius: var(--glass-radius-float);
+  border: 1px solid transparent;
+  background:
+    var(--glass-sheen) padding-box,
+    linear-gradient(var(--glass-tint-heavy), var(--glass-tint-heavy)) padding-box,
+    var(--glass-rim) border-box;
+  backdrop-filter: blur(calc(var(--glass-blur) + 6px)) saturate(var(--glass-saturate))
+    brightness(var(--glass-brightness));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 6px)) saturate(var(--glass-saturate))
+    brightness(var(--glass-brightness));
+  box-shadow: var(--glass-depth-float);
+}
+
+html.glass .el-table,
+html.glass .el-table__body-wrapper,
+html.glass .el-table tr {
+  background-color: transparent;
+}
+
+html.glass .el-popper,
+html.glass .el-dropdown-menu,
+html.glass .el-select-dropdown {
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background:
+    var(--glass-sheen) padding-box,
+    linear-gradient(var(--glass-tint-mid), var(--glass-tint-mid)) padding-box,
+    var(--glass-rim) border-box;
+  backdrop-filter: blur(22px) saturate(var(--glass-saturate)) brightness(var(--glass-brightness));
+  -webkit-backdrop-filter: blur(22px) saturate(var(--glass-saturate))
+    brightness(var(--glass-brightness));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.85),
+    0 4px 14px rgb(28 42 60 / 0.1),
+    0 16px 40px rgb(28 42 60 / 0.16);
+}
+
+html.glass.dark .el-popper,
+html.glass.dark .el-dropdown-menu,
+html.glass.dark .el-select-dropdown {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    0 4px 14px rgb(0 0 0 / 0.4),
+    0 16px 40px rgb(0 0 0 / 0.5);
+}
+
+/*
+ * 侧栏 = Rail。浓度高于内容卡片，否则导航区与内容糊成一片。
+ * 贴视口左缘，不做圆角；右缘一条镜缘提示玻璃板厚度。
+ * 深色下刻意不加 sheen / brightness：通栏元素上会泛白并把光斑整块提亮。
+ */
+html.glass aside {
+  border-radius: 0;
+  border: 0;
+  border-right: 1px solid transparent;
+  background:
+    var(--glass-sheen) padding-box,
+    linear-gradient(var(--glass-tint-heavy), var(--glass-tint-heavy)) padding-box,
+    linear-gradient(
+      to bottom,
+      var(--glass-edge-hi) 0%,
+      var(--glass-fringe-cool) 35%,
+      var(--glass-edge-mid) 70%,
+      rgb(255 255 255 / 0.7) 100%
+    ) border-box;
+  backdrop-filter: blur(24px) saturate(var(--glass-saturate)) brightness(1.06);
+  -webkit-backdrop-filter: blur(24px) saturate(var(--glass-saturate)) brightness(1.06);
+  box-shadow:
+    inset -1px 0 0 rgb(255 255 255 / 0.35),
+    4px 0 24px rgb(28 42 60 / 0.06);
+}
+
+html.glass.dark aside {
+  background:
+    linear-gradient(var(--glass-tint-heavy), var(--glass-tint-heavy)) padding-box,
+    linear-gradient(
+      to bottom,
+      var(--glass-edge-hi) 0%,
+      var(--glass-fringe-cool) 35%,
+      var(--glass-edge-mid) 70%,
+      rgb(255 255 255 / 0.28) 100%
+    ) border-box;
+  backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(24px) saturate(var(--glass-saturate));
+  box-shadow:
+    inset -1px 0 0 rgb(255 255 255 / 0.16),
+    4px 0 24px rgb(0 0 0 / 0.34);
+}
+
+html.glass aside > button.absolute {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--glass-tint-mid), var(--glass-tint-mid)) padding-box,
+    var(--glass-rim) border-box;
+  backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(16px) saturate(var(--glass-saturate));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.8),
+    0 4px 14px rgb(28 42 60 / 0.12);
+}
+
+html.glass.dark aside > button.absolute {
+  background:
+    linear-gradient(rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.12)) padding-box,
+    var(--glass-rim) border-box;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.35),
+    0 4px 14px rgb(0 0 0 / 0.4);
+}
+
+/*
+ * Chip：输入与小控件。体更实，保证长文本扫读——
+ * 液态玻璃的透不能建立在牺牲字段可读性的前提上。
+ */
+html.glass .el-input__wrapper,
+html.glass .el-textarea__inner,
+html.glass .el-select__wrapper {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgb(255 255 255 / 0.58), rgb(255 255 255 / 0.58)) padding-box,
+    linear-gradient(
+      142deg,
+      rgb(255 255 255 / 0.75) 0%,
+      rgb(255 255 255 / 0.2) 50%,
+      rgb(255 255 255 / 0.55) 100%
+    ) border-box;
+  backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(12px) saturate(var(--glass-saturate));
+  box-shadow: inset 0 1px 2px rgb(255 255 255 / 0.45);
+}
+
+html.glass.dark .el-input__wrapper,
+html.glass.dark .el-textarea__inner,
+html.glass.dark .el-select__wrapper {
+  background:
+    linear-gradient(rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.08)) padding-box,
+    linear-gradient(
+      142deg,
+      rgb(255 255 255 / 0.34) 0%,
+      rgb(255 255 255 / 0.08) 50%,
+      rgb(255 255 255 / 0.22) 100%
+    ) border-box;
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.3);
+}
+
+/* 主按钮保持实心：它是页面唯一的强引导，玻璃化会削弱它的分量 */
+html.glass .el-button--primary {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgb(var(--c-ink));
+  border-color: rgb(var(--c-ink));
+}
+
+/* ==========================================================================
+   液态玻璃 · SVG 折射增强（Chromium）
+   --------------------------------------------------------------------------
+   参考 archisvaze/liquid-glass：斜面位移图 + feDisplacementMap 做真实透镜折射。
+   开启后：
+     · 本体几乎无 blur、tint 压到 --glass-refraction-tint
+     · ::after（z-index -1）挂 --liquid-filter 做边缘位移 + specular
+     · sheen / 镜缘 / 厚度阴影仍在本体 background / box-shadow 上
+
+   非 Chromium 或无 JS 时不挂 html.glass-refraction，走上方材质栈回落。
+   ========================================================================== */
+html.glass.glass-refraction .app-card,
+html.glass.glass-refraction .el-card,
+html.glass.glass-refraction .el-dialog,
+html.glass.glass-refraction .el-message-box,
+html.glass.glass-refraction aside {
+  isolation: isolate;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.glass.glass-refraction .app-card,
+html.glass.glass-refraction .el-card {
+  background:
+    var(--glass-sheen) padding-box,
+    linear-gradient(var(--glass-refraction-tint), var(--glass-refraction-tint)) padding-box,
+    var(--glass-rim) border-box;
+}
+
+html.glass.glass-refraction .el-dialog,
+html.glass.glass-refraction .el-message-box {
+  background:
+    var(--glass-sheen) padding-box,
+    linear-gradient(var(--glass-refraction-tint-heavy), var(--glass-refraction-tint-heavy))
+      padding-box,
+    var(--glass-rim) border-box;
+}
+
+html.glass.glass-refraction aside {
+  background:
+    linear-gradient(var(--glass-refraction-tint-heavy), var(--glass-refraction-tint-heavy))
+      padding-box,
+    linear-gradient(
+      to bottom,
+      var(--glass-edge-hi) 0%,
+      var(--glass-fringe-cool) 35%,
+      var(--glass-edge-mid) 70%,
+      rgb(255 255 255 / 0.7) 100%
+    ) border-box;
+}
+
+html.glass.dark.glass-refraction aside {
+  background:
+    linear-gradient(var(--glass-refraction-tint-heavy), var(--glass-refraction-tint-heavy))
+      padding-box,
+    linear-gradient(
+      to bottom,
+      var(--glass-edge-hi) 0%,
+      var(--glass-fringe-cool) 35%,
+      var(--glass-edge-mid) 70%,
+      rgb(255 255 255 / 0.28) 100%
+    ) border-box;
+}
+
+/* 折射层：只在边缘斜面位移，中心仍透得清楚 */
+html.glass.glass-refraction .app-card::after,
+html.glass.glass-refraction .el-card::after,
+html.glass.glass-refraction .el-dialog::after,
+html.glass.glass-refraction .el-message-box::after,
+html.glass.glass-refraction aside::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  backdrop-filter: var(--liquid-filter, blur(14px) saturate(1.6) brightness(1.05));
+  -webkit-backdrop-filter: var(--liquid-filter, blur(14px) saturate(1.6) brightness(1.05));
+}
+
+/* 前庭敏感：折射滤镜退回静态毛玻璃，保留镜缘与投影 */
+@media (prefers-reduced-motion: reduce) {
+  html.glass.glass-refraction .app-card::after,
+  html.glass.glass-refraction .el-card::after,
+  html.glass.glass-refraction .el-dialog::after,
+  html.glass.glass-refraction .el-message-box::after,
+  html.glass.glass-refraction aside::after {
+    backdrop-filter: blur(18px) saturate(1.5) brightness(1.05);
+    -webkit-backdrop-filter: blur(18px) saturate(1.5) brightness(1.05);
+  }
+}
+
 /* 主按钮改为近黑：工具界面里最经得起看的选择，也避开彩色按钮的通用观感 */
 .el-button--primary {
   --el-button-bg-color: rgb(var(--c-ink));
@@ -172,6 +758,13 @@ html.dark {
 .el-dialog {
   --el-dialog-border-radius: 4px;
   border: 1px solid rgb(var(--c-rule));
+}
+
+/* 玻璃主题下让位给镜缘：普通主题的实线边框会盖掉 gradient border */
+html.glass .el-dialog,
+html.glass .el-message-box,
+html.glass .el-card {
+  border-color: transparent;
 }
 
 .el-dialog__header {

@@ -2,8 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { getConfig, updateConfig } from '@/api/config'
 import { setTimeFormat } from '@/utils/format'
+import { supportsLiquidRefraction } from '@/utils/liquidGlass'
 
 const STORAGE_KEY = 'todo_theme_mode'
+
+/** 可选主题。顺序即侧栏按钮的循环顺序 */
+export const THEME_MODES = ['light', 'dark', 'glass', 'glass-dark']
 
 /**
  * 主题与系统配置。
@@ -12,7 +16,9 @@ const STORAGE_KEY = 'todo_theme_mode'
  * 修改时先本地生效再回写服务端，服务端不可用时不影响本地使用。
  */
 export const useThemeStore = defineStore('theme', () => {
-  const mode = ref(localStorage.getItem(STORAGE_KEY) || 'light')
+  // localStorage 中可能是旧版本写入的值，不在白名单内时回落到浅色
+  const stored = localStorage.getItem(STORAGE_KEY)
+  const mode = ref(THEME_MODES.includes(stored) ? stored : 'light')
   const timeFormat = ref('YYYY-MM-DD HH:mm')
   const defaultPriority = ref(3)
   const weekStart = ref(1)
@@ -20,7 +26,14 @@ export const useThemeStore = defineStore('theme', () => {
   const loaded = ref(false)
 
   function apply() {
-    document.documentElement.classList.toggle('dark', mode.value === 'dark')
+    const root = document.documentElement
+    // glass-dark 是组合态：glass 与 dark 两个类都挂，CSS 侧对应 html.glass.dark
+    const isDark = mode.value === 'dark' || mode.value === 'glass-dark'
+    const isGlass = mode.value === 'glass' || mode.value === 'glass-dark'
+    root.classList.toggle('dark', isDark)
+    root.classList.toggle('glass', isGlass)
+    // SVG 折射增强两种玻璃都适用；能力检测失败时 CSS 材质栈已足够
+    root.classList.toggle('glass-refraction', isGlass && supportsLiquidRefraction())
   }
 
   function setMode(next) {
@@ -32,8 +45,10 @@ export const useThemeStore = defineStore('theme', () => {
     })
   }
 
+  /** 按 light → dark → glass → glass-dark 循环 */
   function toggleMode() {
-    setMode(mode.value === 'dark' ? 'light' : 'dark')
+    const next = (THEME_MODES.indexOf(mode.value) + 1) % THEME_MODES.length
+    setMode(THEME_MODES[next])
   }
 
   async function loadFromServer() {

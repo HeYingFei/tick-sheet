@@ -17,7 +17,8 @@ public final class DefaultConfig {
     }
 
     public static final List<Entry> ENTRIES = List.of(
-            new Entry("theme_mode", "light", "系统主题：light-浅色，dark-深色"),
+            new Entry("theme_mode", "light",
+                    "系统主题：light-浅色，dark-深色，glass-液态玻璃，glass-dark-深色玻璃"),
             new Entry("default_priority", "3", "默认任务优先级：1-极高，2-高，3-中，4-低"),
             new Entry("time_format", "YYYY-MM-DD HH:mm", "时间展示格式，使用 dayjs 记号"),
             new Entry("week_start", "1", "周起始日：1-周一，7-周日"),

@@ -23,6 +23,7 @@ frontend/npm-debug.log*
 # ---- 智能体工具 ----
 .ohmyagent/
 .monkeycode/
+.playwright-cli/
 
 # ---- 操作系统 ----
 Thumbs.db

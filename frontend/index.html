@@ -7,9 +7,14 @@
     <meta name="theme-color" content="#F4F5F3" />
     <title>任务管理系统</title>
     <script>
-      // 在首屏渲染前应用主题，避免深色模式下出现白屏闪烁
-      if (localStorage.getItem('todo_theme_mode') === 'dark') {
+      // 在首屏渲染前应用主题，避免深色与玻璃主题下出现白屏闪烁
+      // glass-dark 是玻璃与深色的组合态，两个类都要挂
+      const themeMode = localStorage.getItem('todo_theme_mode')
+      if (themeMode === 'dark' || themeMode === 'glass-dark') {
         document.documentElement.classList.add('dark')
+      }
+      if (themeMode === 'glass' || themeMode === 'glass-dark') {
+        document.documentElement.classList.add('glass')
       }
     </script>
   </head>

@@ -125,8 +125,13 @@ public class TaskService {
         List<Task> tasks = taskMapper.selectList(Wrappers.<Task>lambdaQuery()
                 .eq(Task::getUserId, UserContext.getUserId())
                 .in(Task::getStatus, List.of(TaskStatus.TODO, TaskStatus.DOING, TaskStatus.DONE))
-                .orderByAsc(Task::getSortOrder)
-                .orderByAsc(Task::getId));
+                /*
+                 * 倒序展示：sortOrder 在新建任务时递增（见 nextSortOrder），
+                 * 因此倒序即「最新创建的排在最前」。次级排序同样取倒序，
+                 * 保证同一 sortOrder 下结果稳定。
+                 */
+                .orderByDesc(Task::getSortOrder)
+                .orderByDesc(Task::getId));
 
         OffsetDateTime now = OffsetDateTime.now(ZONE);
         Map<Long, List<TagBriefVO>> tagsByTask =

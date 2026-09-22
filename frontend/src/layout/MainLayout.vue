@@ -1,11 +1,12 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { menuRoutes } from '@/router'
 import { useThemeStore } from '@/store/theme'
 import { useAuthStore } from '@/store/auth'
 import TaskFormDialog from '@/components/TaskFormDialog.vue'
+import { applyLiquidGlassAll, supportsLiquidRefraction } from '@/utils/liquidGlass'
 
 const NAV_COLLAPSED_KEY = 'todo_nav_collapsed'
 
@@ -13,7 +14,17 @@ const route = useRoute()
 const router = useRouter()
 const theme = useThemeStore()
 const auth = useAuthStore()
-const isDark = computed(() => theme.mode === 'dark')
+/**
+ * 侧栏主题按钮的图标与提示。
+ * 图标反映当前主题，提示说明点击后会切到哪里——三态循环只看图标不易自明。
+ */
+const THEME_META = {
+  light: { icon: 'Sunny', label: '切换到深色' },
+  dark: { icon: 'Moon', label: '切换到液态玻璃' },
+  glass: { icon: 'MagicStick', label: '切换到深色玻璃' },
+  'glass-dark': { icon: 'MoonNight', label: '切换到浅色' }
+}
+const themeMeta = computed(() => THEME_META[theme.mode] || THEME_META.light)
 
 const dialogVisible = ref(false)
 
@@ -34,10 +45,38 @@ function toggleNav() {
   localStorage.setItem(NAV_COLLAPSED_KEY, collapsed.value ? '1' : '0')
 }
 
+let stopLiquid = () => {}
+
+/**
+ * Chromium 上给玻璃面板挂 SVG 折射；其它环境走 CSS 回落。
+ * 参数对齐 archisvaze/liquid-glass：低模糊、高 IOR，边缘才有透镜感。
+ */
+async function mountLiquidGlass() {
+  stopLiquid()
+  await nextTick()
+  if (!theme.mode.startsWith('glass') || !supportsLiquidRefraction()) return
+  stopLiquid = applyLiquidGlassAll(
+    '.app-card, aside, .el-dialog, .el-message-box',
+    {
+      thickness: 80,
+      bezel: 12,
+      ior: 2.4,
+      blur: 0.4,
+      scaleRatio: 1,
+      specularOpacity: 0.5,
+      specularSaturation: 4
+    }
+  )
+}
+
+watch(() => theme.mode, mountLiquidGlass)
+
 onMounted(() => {
   theme.apply()
-  theme.loadFromServer()
+  theme.loadFromServer().finally(mountLiquidGlass)
 })
+
+onUnmounted(() => stopLiquid())
 
 function onAddTask() {
   dialogVisible.value = true
@@ -100,9 +139,9 @@ function onLogout() {
 
       <div class="mt-4 border-t border-rule p-2">
         <div class="flex items-center gap-1" :class="collapsed ? 'flex-col' : ''">
-          <el-tooltip :content="isDark ? '切换到浅色' : '切换到深色'" placement="right">
-            <el-button text circle size="small" @click="theme.toggleMode()">
-              <el-icon :size="15"><Moon v-if="isDark" /><Sunny v-else /></el-icon>
+          <el-tooltip :content="themeMeta.label" placement="right">
+            <el-button text circle size="small" :aria-label="themeMeta.label" @click="theme.toggleMode()">
+              <el-icon :size="15"><component :is="themeMeta.icon" /></el-icon>
             </el-button>
           </el-tooltip>
 

@@ -262,6 +262,8 @@ function onLogout() {
             <el-radio-group v-model="configForm.theme_mode" @change="saveConfig">
               <el-radio value="light">浅色</el-radio>
               <el-radio value="dark">深色</el-radio>
+              <el-radio value="glass">液态玻璃</el-radio>
+              <el-radio value="glass-dark">深色玻璃</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item label="默认优先级">
