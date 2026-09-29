@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 全局异常处理。所有异常统一转换为 {@link R} 返回体，HTTP 状态码与业务码保持一致。
@@ -103,6 +104,18 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     public R<Void> handleMaxUploadSize(MaxUploadSizeExceededException e) {
         return R.fail(ErrorCode.PAYLOAD_TOO_LARGE);
+    }
+
+    /**
+     * 路径没匹配到任何处理器。
+     *
+     * <p>Spring 6.1 起，未匹配的请求会抛 NoResourceFoundException；若不单独处理，
+     * 会被下面的兜底 handler 当成未预期异常返回 500，把「接口不存在」伪装成服务端故障。
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public R<Void> handleNoResourceFound(NoResourceFoundException e) {
+        return R.fail(ErrorCode.NOT_FOUND, "接口不存在: " + e.getResourcePath());
     }
 
     @ExceptionHandler(Exception.class)
