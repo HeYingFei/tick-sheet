@@ -16,5 +16,8 @@ public class LoginVO {
 
     private String avatarUrl;
 
+    /** 角色：admin-超级管理员，user-普通用户。前端据此决定是否显示用户管理菜单 */
+    private String role;
+
     private String token;
 }

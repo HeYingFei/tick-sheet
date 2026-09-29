@@ -28,11 +28,6 @@ public class AuthController {
         return R.ok("登录成功", authService.login(request));
     }
 
-    @PostMapping("/register")
-    public R<LoginVO> register(@Valid @RequestBody AuthRequests.RegisterRequest request) {
-        return R.ok("注册成功", authService.register(request));
-    }
-
     @GetMapping("/me")
     public R<LoginVO> me() {
         return R.ok(authService.getCurrentUser());

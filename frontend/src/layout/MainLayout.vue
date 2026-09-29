@@ -7,6 +7,7 @@ import { useThemeStore } from '@/store/theme'
 import { useAuthStore } from '@/store/auth'
 import TaskFormDialog from '@/components/TaskFormDialog.vue'
 import { applyLiquidGlassAll, supportsLiquidRefraction } from '@/utils/liquidGlass'
+import { startGlassLight } from '@/utils/glassLight'
 
 const NAV_COLLAPSED_KEY = 'todo_nav_collapsed'
 
@@ -25,6 +26,14 @@ const THEME_META = {
   'glass-dark': { icon: 'MoonNight', label: '切换到浅色' }
 }
 const themeMeta = computed(() => THEME_META[theme.mode] || THEME_META.light)
+
+/**
+ * 侧栏可见的导航项。
+ * adminOnly 的项只对超级管理员展示；这只是体验优化，真正的权限边界在后端。
+ */
+const visibleRoutes = computed(() =>
+  menuRoutes.filter((item) => !item.meta.adminOnly || auth.isAdmin)
+)
 
 const dialogVisible = ref(false)
 
@@ -46,23 +55,29 @@ function toggleNav() {
 }
 
 let stopLiquid = () => {}
+let stopLight = () => {}
 
 /**
- * Chromium 上给玻璃面板挂 SVG 折射；其它环境走 CSS 回落。
- * 参数对齐 archisvaze/liquid-glass：低模糊、高 IOR，边缘才有透镜感。
+ * 玻璃增强挂载：
+ *   · 流动高光（glassLight）在所有玻璃模式、所有内核生效——纯 CSS 变量驱动。
+ *   · SVG 折射只在 Chromium 生效；参数顶高 bezel/scaleRatio/thickness，
+ *     让圆角边缘产生明显的透镜放大与弯折，中心仍通透。
  */
 async function mountLiquidGlass() {
   stopLiquid()
+  stopLight()
   await nextTick()
-  if (!theme.mode.startsWith('glass') || !supportsLiquidRefraction()) return
+  if (!theme.mode.startsWith('glass')) return
+  stopLight = startGlassLight()
+  if (!supportsLiquidRefraction()) return
   stopLiquid = applyLiquidGlassAll(
     '.app-card, aside, .el-dialog, .el-message-box',
     {
-      thickness: 80,
-      bezel: 12,
+      thickness: 100,
+      bezel: 18,
       ior: 2.4,
       blur: 0.4,
-      scaleRatio: 1,
+      scaleRatio: 1.5,
       specularOpacity: 0.5,
       specularSaturation: 4
     }
@@ -76,7 +91,10 @@ onMounted(() => {
   theme.loadFromServer().finally(mountLiquidGlass)
 })
 
-onUnmounted(() => stopLiquid())
+onUnmounted(() => {
+  stopLiquid()
+  stopLight()
+})
 
 function onAddTask() {
   dialogVisible.value = true
@@ -125,7 +143,7 @@ function onLogout() {
 
       <nav class="flex flex-1 flex-col gap-0.5 px-2">
         <router-link
-          v-for="item in menuRoutes"
+          v-for="item in visibleRoutes"
           :key="item.path"
           :to="item.path"
           class="nav-item"

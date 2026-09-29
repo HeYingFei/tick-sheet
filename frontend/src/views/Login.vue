@@ -1,22 +1,18 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { login, register } from '@/api/auth'
+import { login } from '@/api/auth'
 import { useAuthStore } from '@/store/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
 
-const mode = ref('login')
 const loading = ref(false)
-
-const isLogin = computed(() => mode.value === 'login')
 
 const form = reactive({
   username: '',
-  password: '',
-  nickname: ''
+  password: ''
 })
 
 /** 记录本封面的日期。用原生 Date，不为一行格式化再引入依赖 */
@@ -33,32 +29,18 @@ async function onSubmit() {
     ElMessage.warning('请填写用户名和密码')
     return
   }
-  if (!isLogin.value && form.password.length < 6) {
-    ElMessage.warning('密码长度不能少于 6 位')
-    return
-  }
 
   loading.value = true
   try {
-    const data = isLogin.value
-      ? await login({ username: form.username, password: form.password })
-      : await register({
-          username: form.username,
-          password: form.password,
-          nickname: form.nickname || undefined
-        })
+    const data = await login({ username: form.username, password: form.password })
     auth.setLogin(data)
-    ElMessage.success(isLogin.value ? '登录成功' : '注册成功')
+    ElMessage.success('登录成功')
     router.push('/dashboard')
   } catch {
     /* 失败提示由请求拦截器统一处理 */
   } finally {
     loading.value = false
   }
-}
-
-function switchMode() {
-  mode.value = isLogin.value ? 'register' : 'login'
 }
 </script>
 
@@ -76,22 +58,13 @@ function switchMode() {
       <div class="mt-2.5 h-px bg-ink/60" />
       <div class="mt-[3px] h-px bg-ink/20" />
 
-      <h1 class="mt-9 text-[22px] font-semibold tracking-tight text-ink">
-        {{ isLogin ? '登录' : '创建账号' }}
-      </h1>
-      <p class="mt-1.5 text-[12px] text-graphite">
-        {{ isLogin ? '打开你的工作记录' : '建立你自己的记录本' }}
-      </p>
+      <h1 class="mt-9 text-[22px] font-semibold tracking-tight text-ink">登录</h1>
+      <p class="mt-1.5 text-[12px] text-graphite">打开你的工作记录</p>
 
       <form class="mt-9 space-y-6" @submit.prevent="onSubmit">
         <div class="field-line">
           <label class="eyebrow" for="login-username">用户名</label>
           <el-input id="login-username" v-model="form.username" size="large" @keyup.enter="onSubmit" />
-        </div>
-
-        <div v-if="!isLogin" class="field-line">
-          <label class="eyebrow" for="login-nickname">昵称（选填）</label>
-          <el-input id="login-nickname" v-model="form.nickname" size="large" @keyup.enter="onSubmit" />
         </div>
 
         <div class="field-line">
@@ -113,20 +86,14 @@ function switchMode() {
           :loading="loading"
           @click="onSubmit"
         >
-          {{ isLogin ? '登录' : '创建账号' }}
+          登录
         </el-button>
       </form>
 
-      <div class="mt-6 flex items-center gap-1.5 text-[12px] text-faint">
-        <span>{{ isLogin ? '还没有账号？' : '已有账号？' }}</span>
-        <button
-          type="button"
-          class="text-primary transition-opacity hover:opacity-70"
-          @click="switchMode"
-        >
-          {{ isLogin ? '创建账号' : '去登录' }}
-        </button>
-      </div>
+      <!-- 注册入口已关闭：账号统一由管理员在「用户管理」里创建 -->
+      <p class="mt-6 text-[12px] leading-relaxed text-faint">
+        账号由管理员创建。忘记密码请联系管理员重置。
+      </p>
     </div>
   </div>
 </template>

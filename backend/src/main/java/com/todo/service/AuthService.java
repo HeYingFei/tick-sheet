@@ -6,25 +6,24 @@ import com.todo.config.AuthProperties;
 import com.todo.dto.AuthRequests;
 import com.todo.entity.SysUser;
 import com.todo.mapper.SysUserMapper;
-import com.todo.mapper.SystemConfigMapper;
-import com.todo.support.DefaultConfig;
 import com.todo.support.JwtUtil;
 import com.todo.support.PasswordUtil;
 import com.todo.support.UserContext;
 import com.todo.vo.LoginVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 认证服务。
+ *
+ * <p>注册入口已关闭：账号只能由超级管理员在用户管理中创建，见
+ * {@link UserService#create(com.todo.dto.UserRequests.CreateRequest)}。
  */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
     private final SysUserMapper sysUserMapper;
-    private final SystemConfigMapper systemConfigMapper;
     private final AuthProperties authProperties;
 
     public LoginVO login(AuthRequests.LoginRequest request) {
@@ -41,31 +40,11 @@ public class AuthService {
         return buildLoginVO(user);
     }
 
-    @Transactional
-    public LoginVO register(AuthRequests.RegisterRequest request) {
-        String username = request.getUsername().trim();
-
-        Long exists = sysUserMapper.selectCount(Wrappers.<SysUser>lambdaQuery()
-                .eq(SysUser::getUsername, username));
-        if (exists != null && exists > 0) {
-            throw BizException.conflict("用户名已存在: " + username);
-        }
-
-        SysUser user = new SysUser();
-        user.setUsername(username);
-        user.setPasswordHash(PasswordUtil.hash(request.getPassword()));
-        user.setNickname(request.getNickname() != null && !request.getNickname().isBlank()
-                ? request.getNickname().trim() : username);
-        user.setAvatarUrl("");
-        user.setStatus(1);
-        sysUserMapper.insert(user);
-
-        // 初始化默认配置
-        DefaultConfig.buildFor(user.getId()).forEach(systemConfigMapper::insert);
-
-        return buildLoginVO(user);
-    }
-
+    /**
+     * 当前登录用户。
+     *
+     * <p>角色取自库中的实时值，用户管理里改了角色，这里下一次请求就能读到。
+     */
     public LoginVO getCurrentUser() {
         Long userId = UserContext.getUserId();
         if (userId == null) {
@@ -75,13 +54,7 @@ public class AuthService {
         if (user == null) {
             throw BizException.notFound("用户不存在");
         }
-
-        LoginVO vo = new LoginVO();
-        vo.setId(user.getId());
-        vo.setUsername(user.getUsername());
-        vo.setNickname(user.getNickname());
-        vo.setAvatarUrl(user.getAvatarUrl());
-        return vo;
+        return buildProfileVO(user);
     }
 
     public void updateProfile(AuthRequests.UpdateProfileRequest request) {
@@ -105,6 +78,7 @@ public class AuthService {
         if (user == null) {
             throw BizException.notFound("用户不存在");
         }
+        // 用户改自己的密码必须验原密码；管理员重置他人密码走 UserService
         if (!PasswordUtil.verify(request.getOldPassword(), user.getPasswordHash())) {
             throw BizException.paramInvalid("原密码错误");
         }
@@ -113,13 +87,20 @@ public class AuthService {
     }
 
     private LoginVO buildLoginVO(SysUser user) {
+        LoginVO vo = buildProfileVO(user);
+        vo.setToken(JwtUtil.sign(user.getId(), user.getUsername(), authProperties.getSecret(),
+                authProperties.getExpireMs()));
+        return vo;
+    }
+
+    /** 资料部分：登录、取当前用户、用户管理列表共用同一套字段 */
+    private LoginVO buildProfileVO(SysUser user) {
         LoginVO vo = new LoginVO();
         vo.setId(user.getId());
         vo.setUsername(user.getUsername());
         vo.setNickname(user.getNickname());
         vo.setAvatarUrl(user.getAvatarUrl());
-        vo.setToken(JwtUtil.sign(user.getId(), user.getUsername(), authProperties.getSecret(),
-                authProperties.getExpireMs()));
+        vo.setRole(user.getRole());
         return vo;
     }
 }

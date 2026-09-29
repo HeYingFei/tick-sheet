@@ -11,20 +11,25 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
+    private final AdminOnlyInterceptor adminOnlyInterceptor;
     private final AppProperties appProperties;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 注册入口已关闭：只能由管理员在用户管理里建号，白名单里不再有 register
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
                 .excludePathPatterns(
                         "/api/auth/login",
-                        "/api/auth/register",
                         // Swagger
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
                         "/swagger-ui.html"
                 );
+
+        // 用户管理仅超级管理员可用。必须注册在认证拦截器之后，依赖它先载入角色。
+        registry.addInterceptor(adminOnlyInterceptor)
+                .addPathPatterns("/api/users/**");
     }
 
     @Override

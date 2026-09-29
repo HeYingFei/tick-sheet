@@ -10,10 +10,19 @@ export const useAuthStore = defineStore('auth', () => {
   const username = computed(() => user.value?.username || '')
   const nickname = computed(() => user.value?.nickname || user.value?.username || '')
   const avatarUrl = computed(() => user.value?.avatarUrl || '')
+  const role = computed(() => user.value?.role || '')
+  /** 超级管理员。用户管理菜单与路由只对它开放，真正的拦截在后端 */
+  const isAdmin = computed(() => role.value === 'admin')
 
   function setLogin(data) {
     token.value = data.token
-    user.value = { id: data.id, username: data.username, nickname: data.nickname, avatarUrl: data.avatarUrl }
+    user.value = {
+      id: data.id,
+      username: data.username,
+      nickname: data.nickname,
+      avatarUrl: data.avatarUrl,
+      role: data.role
+    }
     localStorage.setItem('token', data.token)
     localStorage.setItem('user', JSON.stringify(user.value))
   }
@@ -35,5 +44,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isLoggedIn, username, nickname, avatarUrl, setLogin, logout, fetchUser }
+  return { user, token, isLoggedIn, username, nickname, avatarUrl, role, isAdmin, setLogin, logout, fetchUser }
 })

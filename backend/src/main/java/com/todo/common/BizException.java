@@ -32,6 +32,10 @@ public class BizException extends RuntimeException {
         return new BizException(ErrorCode.CONFLICT, message);
     }
 
+    public static BizException forbidden(String message) {
+        return new BizException(ErrorCode.FORBIDDEN, message);
+    }
+
     public static BizException unsupported(String message) {
         return new BizException(ErrorCode.UNSUPPORTED_MEDIA_TYPE, message);
     }

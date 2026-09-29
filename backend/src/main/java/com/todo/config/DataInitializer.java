@@ -15,6 +15,7 @@ import com.todo.mapper.TaskLogMapper;
 import com.todo.mapper.TaskMapper;
 import com.todo.support.DefaultConfig;
 import com.todo.support.PasswordUtil;
+import com.todo.support.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -63,6 +64,8 @@ public class DataInitializer implements CommandLineRunner {
         admin.setNickname("管理员");
         admin.setAvatarUrl("");
         admin.setStatus(1);
+        // 全新库执行 V4 时 sys_user 还是空的，迁移脚本提不出超管，靠这里兜底
+        admin.setRole(Role.ADMIN);
         sysUserMapper.insert(admin);
         log.info("已创建默认管理员账号: admin / admin123，请尽快修改密码");
         return admin;

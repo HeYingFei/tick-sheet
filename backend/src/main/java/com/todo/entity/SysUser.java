@@ -30,6 +30,9 @@ public class SysUser {
     /** 0-禁用 1-启用 */
     private Integer status;
 
+    /** 角色：admin-超级管理员，user-普通用户，见 {@link com.todo.support.Role} */
+    private String role;
+
     @TableField(fill = FieldFill.INSERT)
     private OffsetDateTime createTime;
 

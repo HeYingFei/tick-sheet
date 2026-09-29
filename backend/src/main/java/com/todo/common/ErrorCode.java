@@ -10,6 +10,7 @@ public enum ErrorCode {
 
     SUCCESS(200, "操作成功"),
     UNAUTHORIZED(401, "未登录或登录已过期"),
+    FORBIDDEN(403, "无权访问"),
     PARAM_INVALID(400, "参数校验失败"),
     NOT_FOUND(404, "资源不存在"),
     CONFLICT(409, "数据冲突"),
