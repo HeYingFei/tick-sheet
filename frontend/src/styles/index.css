@@ -168,18 +168,18 @@ html.glass {
   --c-teal: 42 110 107;
 
   /* ---- 光学材质令牌 ---- */
-  /* 回落路径：CSS 毛玻璃用的模糊；折射开启后改走 --liquid-filter，blur 接近 0 */
-  --glass-blur: 18px;
-  --glass-saturate: 1.85;
-  --glass-brightness: 1.08;
+  /* 回落路径：中心要通透，blur 压到刚好柔化背景即可；戏在边缘折射，不在磨砂 */
+  --glass-blur: 6px;
+  --glass-saturate: 1.6;
+  --glass-brightness: 1.04;
   /*
    * tint 只托轮廓，厚度感由 sheen、镜缘与 inset 高光撑起。
    * --glass-refraction-tint：折射开启后压到几乎不可见，否则会糊掉位移。
    */
-  --glass-tint: rgb(255 255 255 / 0.14);
+  --glass-tint: rgb(255 255 255 / 0.1);
   --glass-tint-mid: rgb(255 255 255 / 0.26);
   --glass-tint-heavy: rgb(255 255 255 / 0.36);
-  --glass-refraction-tint: rgb(255 255 255 / 0.06);
+  --glass-refraction-tint: rgb(255 255 255 / 0.05);
   --glass-refraction-tint-mid: rgb(255 255 255 / 0.1);
   --glass-refraction-tint-heavy: rgb(255 255 255 / 0.14);
   --glass-edge-hi: rgb(255 255 255 / 0.92);
@@ -190,25 +190,27 @@ html.glass {
   --glass-radius-float: 22px;
 
   /*
-   * 镜面 sheen：118° 从左上打光。
+   * 镜面 sheen：跟随光源变量 --glass-light-x/y 的移动高光（由 glassLight.js 写入）。
+   * 无 JS / 未初始化时回落到左上固定光，永不比静态差。
    * 层叠顺序 = 上层在前：sheen → 体色 →（border-box 上的）镜缘。
    */
-  --glass-sheen: linear-gradient(
-    118deg,
-    rgb(255 255 255 / 0.42) 0%,
-    rgb(255 255 255 / 0.08) 26%,
-    rgb(255 255 255 / 0.02) 48%,
-    rgb(255 255 255 / 0.06) 68%,
-    rgb(255 255 255 / 0.22) 100%
+  --glass-sheen: radial-gradient(
+    120% 90% at calc(var(--glass-light-x, 0.2) * 100%) calc(var(--glass-light-y, 0.05) * 100%),
+    rgb(255 255 255 / 0.3) 0%,
+    rgb(255 255 255 / 0.1) 30%,
+    rgb(255 255 255 / 0.02) 55%,
+    transparent 75%
   );
+  /*
+   * 镜缘：顶光物理菲涅尔带——上斜面受光最强，两侧衰减，底部反射补光。
+   * 跟随盒子竖直方向，不再是斜扫的彩虹贴花；真色散交给第二步的折射。
+   */
   --glass-rim: linear-gradient(
-    142deg,
-    var(--glass-edge-hi) 0%,
-    var(--glass-fringe-cool) 16%,
-    var(--glass-edge-mid) 40%,
-    var(--glass-fringe-warm) 58%,
-    var(--glass-edge-mid) 78%,
-    rgb(255 255 255 / 0.78) 100%
+    180deg,
+    rgb(255 255 255 / 0.85) 0%,
+    rgb(255 255 255 / 0.28) 22%,
+    rgb(255 255 255 / 0.1) 55%,
+    rgb(255 255 255 / 0.3) 100%
   );
   /* 厚度阴影：上缘受光最强，底部内侧略沉，左右收边 + 三层外投影 */
   --glass-depth:
@@ -298,10 +300,10 @@ html.glass.dark {
   --c-violet: 160 144 190;
   --c-teal: 110 176 170;
 
-  --glass-blur: 18px;
+  --glass-blur: 6px;
   --glass-saturate: 1.6;
-  --glass-brightness: 1.16;
-  --glass-tint: rgb(255 255 255 / 0.08);
+  --glass-brightness: 1.1;
+  --glass-tint: rgb(255 255 255 / 0.06);
   --glass-tint-mid: rgb(255 255 255 / 0.12);
   --glass-tint-heavy: rgb(255 255 255 / 0.18);
   --glass-refraction-tint: rgb(255 255 255 / 0.04);
@@ -312,23 +314,20 @@ html.glass.dark {
   --glass-fringe-cool: rgb(126 186 255 / 0.34);
   --glass-fringe-warm: rgb(255 172 200 / 0.28);
 
-  /* sheen 在深色下要收敛：浅色版 0.42 的起手高光落在暗底上会像一道划痕 */
-  --glass-sheen: linear-gradient(
-    118deg,
-    rgb(255 255 255 / 0.16) 0%,
-    rgb(255 255 255 / 0.05) 26%,
-    rgb(255 255 255 / 0.01) 48%,
-    rgb(255 255 255 / 0.03) 68%,
-    rgb(255 255 255 / 0.12) 100%
+  /* sheen 在深色下要收敛：跟随光源变量的移动高光，暗底上只用低 alpha，避免像划痕 */
+  --glass-sheen: radial-gradient(
+    120% 90% at calc(var(--glass-light-x, 0.2) * 100%) calc(var(--glass-light-y, 0.05) * 100%),
+    rgb(255 255 255 / 0.14) 0%,
+    rgb(255 255 255 / 0.05) 30%,
+    rgb(255 255 255 / 0.01) 55%,
+    transparent 75%
   );
   --glass-rim: linear-gradient(
-    142deg,
-    var(--glass-edge-hi) 0%,
-    var(--glass-fringe-cool) 16%,
-    var(--glass-edge-mid) 40%,
-    var(--glass-fringe-warm) 58%,
-    var(--glass-edge-mid) 78%,
-    rgb(255 255 255 / 0.36) 100%
+    180deg,
+    rgb(255 255 255 / 0.55) 0%,
+    rgb(255 255 255 / 0.16) 22%,
+    rgb(255 255 255 / 0.06) 55%,
+    rgb(255 255 255 / 0.18) 100%
   );
   --glass-depth:
     inset 0 1px 0 rgb(255 255 255 / 0.42),
@@ -384,23 +383,23 @@ html.glass body::before {
   inset: -8%;
   z-index: -1;
   pointer-events: none;
+  /* 冷色仪器光场：单一蓝系、低饱和、大而软——读作「光场」而非离散色球。
+     提供可折射的明暗结构，细节由 body::after 的网格承担。 */
   background:
-    radial-gradient(ellipse 55% 48% at 10% 4%, rgb(72 124 188 / 0.58), transparent 58%),
-    radial-gradient(ellipse 48% 52% at 90% 8%, rgb(48 148 156 / 0.48), transparent 55%),
-    radial-gradient(ellipse 58% 50% at 82% 92%, rgb(112 88 168 / 0.42), transparent 58%),
-    radial-gradient(ellipse 50% 46% at 12% 96%, rgb(188 108 148 / 0.34), transparent 55%),
-    radial-gradient(ellipse 70% 60% at 50% 50%, rgb(140 170 210 / 0.2), transparent 70%);
-  animation: glass-drift 34s ease-in-out infinite alternate;
+    radial-gradient(120% 80% at 10% -10%, rgb(126 165 208 / 0.34), transparent 55%),
+    radial-gradient(100% 70% at 95% 5%, rgb(104 148 180 / 0.2), transparent 52%),
+    radial-gradient(140% 100% at 50% 115%, rgb(150 176 202 / 0.16), transparent 60%),
+    linear-gradient(180deg, rgb(226 233 242 / 0.5), rgb(238 242 248 / 0.2));
+  animation: glass-drift 48s ease-in-out infinite alternate;
 }
 
-/* 深色光场：压亮度、提饱和，透出来是一层幽光 */
+/* 深色光场：同蓝系，压亮度、稍提饱和，透出来是一层幽光而非彩色斑块 */
 html.glass.dark body::before {
   background:
-    radial-gradient(ellipse 55% 48% at 10% 4%, rgb(46 96 168 / 0.62), transparent 58%),
-    radial-gradient(ellipse 48% 52% at 90% 8%, rgb(30 118 128 / 0.5), transparent 55%),
-    radial-gradient(ellipse 58% 50% at 82% 92%, rgb(84 62 136 / 0.46), transparent 58%),
-    radial-gradient(ellipse 50% 46% at 12% 96%, rgb(140 72 108 / 0.34), transparent 55%),
-    radial-gradient(ellipse 70% 60% at 50% 50%, rgb(64 88 124 / 0.22), transparent 70%);
+    radial-gradient(120% 80% at 10% -10%, rgb(40 78 122 / 0.55), transparent 55%),
+    radial-gradient(100% 70% at 95% 5%, rgb(30 70 100 / 0.4), transparent 52%),
+    radial-gradient(140% 100% at 50% 115%, rgb(48 74 104 / 0.34), transparent 60%),
+    linear-gradient(180deg, rgb(16 22 30 / 0.6), rgb(11 15 20 / 0.35));
 }
 
 /* 细网格：透过玻璃能看见的细节，也是刻度尺向背景的延伸 */
@@ -423,10 +422,10 @@ html.glass.dark body::after {
 
 @keyframes glass-drift {
   from {
-    transform: translate3d(-4%, -3%, 0) scale(1.06);
+    transform: translate3d(-2.5%, -1.5%, 0) scale(1.04);
   }
   to {
-    transform: translate3d(5%, 4%, 0) scale(1.14);
+    transform: translate3d(2.5%, 2%, 0) scale(1.08);
   }
 }
 
